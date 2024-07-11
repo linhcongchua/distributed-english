@@ -1,0 +1,69 @@
+version: '3.8'
+
+networks:
+  cdc-using-debezium-network:
+    name: cdc-using-debezium-network
+    driver: bridge
+    external: false
+
+services:
+  english-postgres:
+    build:
+      context: ./z-docker-postgres
+    container_name: english-postgres
+    restart: always
+    ports:
+      - '5445:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_MULTIPLE_DATABASES="account-service","forum-service","notification-service","payment-service"
+    command: [ "postgres", "-c", "wal_level=logical" ]
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - cdc-using-debezium-network
+
+  english-kafka:
+    image: bitnami/kafka
+    container_name: english-kafka
+    hostname: english-kafka
+    restart: always
+    ports:
+      - '9092:9092'
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_KRAFT_CLUSTER_ID: q0k00yjQRaqWmAAAZv955w # base64 UUID
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: INTERNAL://english-kafka:29092,CONTROLLER://english-kafka:29093,EXTERNAL://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://english-kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@english-kafka:29093
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    networks:
+      - cdc-using-debezium-network
+
+  debezium-connect:
+    image: debezium/connect
+    container_name: debezium-connect
+    hostname: debezium-connect
+    restart: always
+    ports:
+      - '8083:8083'
+    environment:
+      BOOTSTRAP_SERVERS: english-kafka:29092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      ENABLE_DEBEZIUM_SCRIPTING: 'true'
+    links:
+      - english-postgres
+      - english-kafka
+    networks:
+      - cdc-using-debezium-network
+volumes:
+  db:
+    name: postgres-distributed-english-data
+    driver: local
