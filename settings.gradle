@@ -1,1 +1,8 @@
 rootProject.name = 'distributed-english'
+include 'core-kafka'
+include 'core-kafka:consumer'
+findProject(':core-kafka:consumer')?.name = 'consumer'
+include 'core-kafka:producer'
+findProject(':core-kafka:producer')?.name = 'producer'
+include 'core-events'
+
