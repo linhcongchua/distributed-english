@@ -5,6 +5,7 @@ import com.enthusiasm.events.Event;
 import com.enthusiasm.events.EventSourcingUtils;
 import com.enthusiasm.events.Snapshot;
 import com.enthusiasm.events.exceptions.AggregateNotFoundException;
+import com.enthusiasm.outbox.EventDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -41,9 +42,11 @@ public class EventRepositoryImpl implements EventRepository {
 
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final EventDispatcher eventDispatcher;
 
-    public EventRepositoryImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+    public EventRepositoryImpl(NamedParameterJdbcTemplate jdbcTemplate, EventDispatcher eventDispatcher) {
         this.jdbcTemplate = jdbcTemplate;
+        this.eventDispatcher = eventDispatcher;
     }
 
     @Override
@@ -90,6 +93,10 @@ public class EventRepositoryImpl implements EventRepository {
         if (aggregate.getVersion() % SNAPSHOT_FREQUENCE == 0) {
             saveSnapshot(aggregate);
         }
+
+        // publish event here
+        aggregateEvents.forEach(eventDispatcher::onExportedEvent);
+
         LOGGER.info("(save) saved aggregate: {}", aggregate);
     }
 
@@ -104,7 +111,6 @@ public class EventRepositoryImpl implements EventRepository {
     private void handleConcurrency(String aggregateId) {
         try {
             String aggregateID = jdbcTemplate.queryForObject(HANDLE_CONCURRENCY_QUERY, Mapper.mapTo(aggregateId), String.class);
-
         } catch (EmptyResultDataAccessException e) {
             LOGGER.error("(handleConcurrency) EmptyResultDataAccessException.", e);
         }

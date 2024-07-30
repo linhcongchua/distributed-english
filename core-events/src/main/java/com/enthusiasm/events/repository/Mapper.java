@@ -17,7 +17,7 @@ public class Mapper {
             .data(rs.getBytes(Constants.DATA))
             .metaData(rs.getBytes(Constants.METADATA))
             .version(rs.getLong(Constants.VERSION))
-            .timeStamp(rs.getTimestamp(Constants.TIMESTAMP).toLocalDateTime())
+            .timeStamp(rs.getTimestamp(Constants.TIMESTAMP).toInstant())
             .build();
 
     public static final RowMapper<Snapshot> SNAPSHOT_ROW_MAPPER = (rs, rowNum) -> Snapshot.builder()

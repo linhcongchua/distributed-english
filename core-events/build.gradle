@@ -10,10 +10,10 @@ repositories {
 }
 
 dependencies {
-    implementation project(":core-kafka:consumer")
-    implementation project(":core-kafka:producer")
+    implementation project(":core-outbox")
 
     compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
     implementation 'org.slf4j:slf4j-api:2.0.13'
     implementation 'com.google.guava:guava:33.2.1-jre'
 
