@@ -7,4 +7,5 @@ findProject(':core-kafka:producer')?.name = 'producer'
 include 'core-events'
 include 'payment-service'
 include 'core-outbox'
+include 'notification-service'
 

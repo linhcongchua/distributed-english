@@ -4,7 +4,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-import java.util.List;
 import java.util.Properties;
 
 public interface ConsumerProperties {
