@@ -14,7 +14,7 @@ public class EMoneyCommandHandler implements EMoneyCommandService {
 
     private final EventRepository eventRepository;
 
-    public EMoneyCommandHandler(@Autowired(required = false) EventRepository eventRepository) {
+    public EMoneyCommandHandler(EventRepository eventRepository) {
         this.eventRepository = eventRepository;
     }
 

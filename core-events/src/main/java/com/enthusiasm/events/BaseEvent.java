@@ -1,10 +1,12 @@
 package com.enthusiasm.events;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
 @NoArgsConstructor
+@Data
 public class BaseEvent {
     protected String aggregateId;
 

@@ -7,7 +7,7 @@ import java.util.Map;
 
 @Data
 public class CommandHandlerDescription {
-    private String topic;
+    private String topic; // todo: modify properties
     private String group;
     private boolean isThreadPerPartition;
     private Map<String, Method> methodHandler;

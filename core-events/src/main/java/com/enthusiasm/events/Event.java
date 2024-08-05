@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -44,5 +46,12 @@ public class Event implements ExportedEvent<String, JsonNode> {
     @Override
     public JsonNode getPayload() {
         return SerializerUtils.serializeToJsonNode(data);
+    }
+
+    @Override
+    public Map<String, Object> getAdditionalFieldValues() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", id == null ? UUID.randomUUID().toString() : id.toString());
+        return map;
     }
 }

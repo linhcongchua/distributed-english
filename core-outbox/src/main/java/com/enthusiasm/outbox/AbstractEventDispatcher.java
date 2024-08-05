@@ -1,5 +1,7 @@
 package com.enthusiasm.outbox;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.persistence.EntityManager;
 import org.hibernate.Session;
 
@@ -18,8 +20,9 @@ public abstract class AbstractEventDispatcher extends AbstractEventWriter<Void> 
     protected Void persist(Map<String, Object> dataMap) {
         // Unwrap to Hibernate session and save
         var session = entityManager.unwrap(Session.class);
-        session.persist(outboxProperties.getPathEventEntity(), dataMap);
-        session.setReadOnly(dataMap, true);
+        Object entity = JsonMapperUtils.loadObject(dataMap, outboxProperties.getPathEventEntity());
+        session.persist(outboxProperties.getPathEventEntity(), entity);
+        session.setReadOnly(entity, true);
         remove(session, dataMap);
         return null;
     }

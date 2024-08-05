@@ -44,11 +44,7 @@ public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextA
             Map<Method, CommandHandler> methodCommandHandlerMap = MethodIntrospector.selectMethods(aClass, (MethodIntrospector.MetadataLookup<CommandHandler>) method -> method.getAnnotation(CommandHandler.class));
 
             var handlerDescription = createHandlerDescription(commandDispatcher, methodCommandHandlerMap);
-            for (var entry : methodCommandHandlerMap.entrySet()) {
-                Method method = entry.getKey();
-                CommandHandler commandHandler = entry.getValue();
-                registerCommandHandler(handlerDescription, bean);
-            }
+            registerCommandHandler(handlerDescription, bean);
         }
 
         return bean;

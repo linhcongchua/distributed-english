@@ -63,22 +63,22 @@ public class CommandListenerContainer {
 
         @Override
         public void accept(ConsumerRecord<String, byte[]> record) {
-            Headers headers = record.headers();
-            Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE");
-            String  commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
-            Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
-            Method method = methodHandler.get(commandType);
-            if (method == null) {
-                throw new NotFoundCommandTypeHandler(commandType);
-            }
-            Parameter[] parameters = method.getParameters();
-            Parameter parameter = parameters[0];
-            Parameter parameter1 = JsonMapperUtils.deserialize(record.value(), parameter.getClass());
-            method.setAccessible(true);
             try {
+                Headers headers = record.headers();
+                Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE");
+                String  commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
+                Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
+                Method method = methodHandler.get(commandType);
+                if (method == null) {
+                    throw new NotFoundCommandTypeHandler(commandType);
+                }
+                Parameter[] parameters = method.getParameters();
+                Parameter parameter = parameters[0];
+                Object parameter1 = JsonMapperUtils.deserialize(record.value(), parameter.getType());
+                method.setAccessible(true);
                 method.invoke(instance, parameter1);
-            } catch (IllegalAccessException|InvocationTargetException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                LOGGER.error("Error when handle message", e);
             }
         }
     }

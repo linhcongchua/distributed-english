@@ -78,7 +78,7 @@ public class EMoneyAggregate extends AggregateRoot {
 
 
     public void createAccount() {
-        final var data = AccountCreatedEvent.builder().build();
+        final var data = AccountCreatedEvent.builder().aggregateId(this.getId()).build();
         final byte[] dataBytes = SerializerUtils.serializeToJsonBytes(data);
         final var event = createEvent(MoneyEventType.ACCOUNT_INITIALIZED.name(), dataBytes, null);
         this.apply(event);
