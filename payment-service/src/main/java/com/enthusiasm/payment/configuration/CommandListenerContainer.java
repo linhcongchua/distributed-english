@@ -65,7 +65,7 @@ public class CommandListenerContainer {
         public void accept(ConsumerRecord<String, byte[]> record) {
             try {
                 Headers headers = record.headers();
-                Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE");
+                Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE"); // todo: config debezium header router
                 String  commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
                 Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
                 Method method = methodHandler.get(commandType);
