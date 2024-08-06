@@ -5,4 +5,7 @@ findProject(':core-kafka:consumer')?.name = 'consumer'
 include 'core-kafka:producer'
 findProject(':core-kafka:producer')?.name = 'producer'
 include 'core-events'
+include 'payment-service'
+include 'core-outbox'
+include 'notification-service'
 

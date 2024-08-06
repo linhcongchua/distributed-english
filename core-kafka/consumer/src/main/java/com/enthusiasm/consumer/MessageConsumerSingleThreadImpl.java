@@ -26,14 +26,14 @@ public class MessageConsumerSingleThreadImpl implements MessageConsumer, Runnabl
 
     Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>();
 
-    public MessageConsumerSingleThreadImpl(KafkaConsumer<String, byte[]> delegateConsumer, MessageHandler handler, String topic) {
-        this.delegateConsumer = delegateConsumer;
+    public MessageConsumerSingleThreadImpl(ConsumerProperties config, MessageHandler handler, String topic) {
+        this.delegateConsumer = new KafkaConsumer<>(config.getDefault());
         this.handler = handler;
         this.topic = topic;
     }
 
     @Override
-    public MessageSubscription subscribe(String topic) {
+    public MessageSubscription subscribe() {
         new Thread(this).start();
         return this;
     }

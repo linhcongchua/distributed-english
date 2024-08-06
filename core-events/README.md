@@ -1,0 +1,1 @@
+// todo: add docs events entity config

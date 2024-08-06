@@ -36,7 +36,7 @@ public class MessageConsumerMultiThreadImpl implements MessageConsumer, Runnable
     }
 
     @Override
-    public MessageSubscription subscribe(String topic) {
+    public MessageSubscription subscribe() {
         new Thread(this).start();
         return this;
     }

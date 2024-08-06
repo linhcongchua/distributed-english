@@ -4,7 +4,7 @@ import com.enthusiasm.events.exceptions.InvalidEventException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -74,7 +74,7 @@ public abstract class AggregateRoot {
                 .eventType(eventType)
                 .data(Objects.isNull(data) ? new byte[]{} : data)
                 .metaData(Objects.isNull(metadata) ? new byte[]{} : metadata)
-                .timeStamp(LocalDateTime.now())
+                .timeStamp(Instant.now())
                 .build();
     }
 
