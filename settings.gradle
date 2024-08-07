@@ -8,4 +8,5 @@ include 'core-events'
 include 'payment-service'
 include 'core-outbox'
 include 'notification-service'
+include 'saga-orchestration-service'
 
