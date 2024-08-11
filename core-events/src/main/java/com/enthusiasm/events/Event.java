@@ -1,5 +1,6 @@
 package com.enthusiasm.events;
 
+import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.outbox.ExportedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;

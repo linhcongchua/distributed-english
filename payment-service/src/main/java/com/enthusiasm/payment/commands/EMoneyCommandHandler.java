@@ -1,11 +1,10 @@
 package com.enthusiasm.payment.commands;
 
 
+import com.enthusiasm.dispatcher.command.CommandDispatcher;
+import com.enthusiasm.dispatcher.command.CommandHandler;
 import com.enthusiasm.events.repository.EventRepository;
-import com.enthusiasm.payment.configuration.CommandDispatcher;
-import com.enthusiasm.payment.configuration.CommandHandler;
 import com.enthusiasm.payment.domain.EMoneyAggregate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component

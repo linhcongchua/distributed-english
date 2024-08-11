@@ -9,4 +9,8 @@ include 'payment-service'
 include 'core-outbox'
 include 'notification-service'
 include 'saga-orchestration-service'
+include 'forum-service'
+include 'gateway-service'
+include 'common-jackson'
+include 'core-distpatcher'
 

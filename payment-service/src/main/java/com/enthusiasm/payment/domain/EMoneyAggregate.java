@@ -1,8 +1,8 @@
 package com.enthusiasm.payment.domain;
 
+import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.events.AggregateRoot;
 import com.enthusiasm.events.Event;
-import com.enthusiasm.events.SerializerUtils;
 import com.enthusiasm.payment.events.BalanceDepositedEvent;
 import com.enthusiasm.payment.events.BalanceWithdrewEvent;
 import com.enthusiasm.payment.events.AccountCreatedEvent;
