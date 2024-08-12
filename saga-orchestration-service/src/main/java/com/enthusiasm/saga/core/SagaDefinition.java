@@ -2,20 +2,28 @@ package com.enthusiasm.saga.core;
 
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.*;
 
 public class SagaDefinition {
     private String description;
+
+    private final String id;
+    private String topic;
     private List<SagaStep> sagaSteps;
 
-    public SagaDefinition(String description, List<SagaStep> sagaSteps) {
+    public SagaDefinition(String id, String topic, String description, List<SagaStep> sagaSteps) {
+        this.id = id;
+        this.topic = topic;
         this.description = description;
         this.sagaSteps = sagaSteps;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTopic() {
+        return topic;
     }
 
     public String getDescription() {
@@ -26,13 +34,23 @@ public class SagaDefinition {
         return sagaSteps;
     }
 
-    public static <State> SagaDefinitionBuilder<State> builder() {
-        return new SagaDefinitionBuilder<>();
+    public static <State> SagaDefinitionBuilder<State> builder(String topic) {
+        return new SagaDefinitionBuilder<>(topic);
     }
 
     public static class SagaDefinitionBuilder<State> {
+        private final String id;
+
+        private final String topic;
+
         private String description;
+
         private List<SagaStep> sagaSteps = new ArrayList<>();
+
+        public SagaDefinitionBuilder(String topic) {
+            this.id = UUID.randomUUID().toString();
+            this.topic = topic;
+        }
 
         public SagaDefinitionBuilder<State> withDescription(String description) {
             this.description = description;
@@ -44,7 +62,7 @@ public class SagaDefinition {
         }
 
         public SagaDefinition build() {
-            return new SagaDefinition(this.description, Collections.unmodifiableList(this.sagaSteps));
+            return new SagaDefinition(id, topic, this.description, Collections.unmodifiableList(this.sagaSteps));
         }
 
         void addStep(SagaStep step) {
@@ -57,7 +75,6 @@ public class SagaDefinition {
 
         private List<SubSagaStep> subSagaSteps = new ArrayList<>();
         private String description;
-        private String replyTo;
 
         private SubSagaStep currentSubStep;
 
@@ -70,22 +87,17 @@ public class SagaDefinition {
             return this;
         }
 
-        public StepBuilder<State> withReplyTo(String replyTo) {
-            this.replyTo = replyTo;
+        public <C extends Command> StepBuilder<State> invoke(Endpoint<C, State> endpoint) {
+            currentSubStep = new SubSagaStep(UUID.randomUUID());
+            currentSubStep.endpoint = endpoint;
             return this;
         }
 
-        public StepBuilder<State> invoke(Invoke invoke, Consumer<State> stateTransform) {
-            currentSubStep = new SubSagaStep();
-            currentSubStep.invoke = invoke;
-            return this;
-        }
-
-        public StepBuilder<State> withCompensation(Compensation compensation, Consumer<State> stateTransform) {
+        public <C extends Command> StepBuilder<State> withCompensation(Endpoint<C, State> compensationEndpoint) {
             if (currentSubStep == null) {
                 throw new RuntimeException("Wrong config order");
             }
-            currentSubStep.compensation = Optional.of(compensation);
+            currentSubStep.compensation = Optional.of(compensationEndpoint);
             return this;
         }
 
@@ -94,8 +106,8 @@ public class SagaDefinition {
                 throw new  RuntimeException("Sub step cannot be empty");
             }
             var step = new SagaStep(
+                    UUID.randomUUID(),
                     this.description,
-                    this.replyTo,
                     Collections.unmodifiableList(subSagaSteps)
             );
 

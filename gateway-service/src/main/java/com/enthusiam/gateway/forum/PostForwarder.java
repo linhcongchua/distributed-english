@@ -22,7 +22,6 @@ public class PostForwarder {
 
     @PostMapping("/post")
     public CreatePostResponse createPost(@RequestBody CreatePostRequest request) {
-//        Map<String, String> header = Map.of("COMMAND_TYPE", "CREATE_POST_COMMAND");
 
         UUID postId = UUID.randomUUID();
         var command = new CreatePostCommand(

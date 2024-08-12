@@ -8,7 +8,7 @@ import com.enthusiasm.payment.domain.EMoneyAggregate;
 import org.springframework.stereotype.Component;
 
 @Component
-@CommandDispatcher(service = "payment", aggregate = "emoney-aggregate")
+@CommandDispatcher(service = "payment-service", topic = "emoney")
 public class EMoneyCommandHandler implements EMoneyCommandService {
 
     private final EventRepository eventRepository;

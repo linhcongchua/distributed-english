@@ -7,8 +7,10 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Inherited
 public @interface CommandDispatcher {
-    String aggregate();
     String service();
+    String topic();
 
     boolean isThreadPerPartition() default true;
+
+
 }

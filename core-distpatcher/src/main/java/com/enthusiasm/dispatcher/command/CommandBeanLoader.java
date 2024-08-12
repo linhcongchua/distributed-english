@@ -52,8 +52,8 @@ public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextA
 
     private CommandHandlerDescription createHandlerDescription(CommandDispatcher commandDispatcher, Map<Method, CommandHandler> methodCommandHandlerMap) {
         var handlerDescription = new CommandHandlerDescription();
-        handlerDescription.setTopic(commandDispatcher.service() + '-' + commandDispatcher.aggregate());
-        handlerDescription.setGroup(commandDispatcher.service());
+        handlerDescription.setTopic(commandDispatcher.service() + '-' + commandDispatcher.topic()); // todo: fix
+        handlerDescription.setGroup(commandDispatcher.service()); // todo: check logic
         handlerDescription.setThreadPerPartition(commandDispatcher.isThreadPerPartition()); // todo: should using properties config consumer
 
         final Map<String, Method> commandTypeMethod = new HashMap<>();

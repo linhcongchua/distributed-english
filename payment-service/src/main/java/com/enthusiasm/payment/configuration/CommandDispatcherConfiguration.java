@@ -36,7 +36,7 @@ public class CommandDispatcherConfiguration {
 
             @Override
             public String groupId() {
-                return "whatever";
+                return "payment-service";
             }
         };
     }
