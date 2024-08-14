@@ -48,7 +48,7 @@ public class QuestionCreatedSaga {
 
 
     @Bean
-    SagaDefinition exampleSaga() {
+    SagaDefinition<QuestionCreateState> exampleSaga() {
 
         // todo: auto generate stepId
         return SagaDefinition.<QuestionCreateState>builder("orchestration-create-post")

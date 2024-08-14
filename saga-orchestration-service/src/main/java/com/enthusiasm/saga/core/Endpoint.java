@@ -1,10 +1,13 @@
 package com.enthusiasm.saga.core;
 
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@Getter
 public class Endpoint<C extends Command, State> {
     private final String topic;
     private final BiFunction<State, byte[], Boolean> replyHandler;
@@ -24,26 +27,6 @@ public class Endpoint<C extends Command, State> {
 
     public static <C extends Command, State> EndpointBuilder<C, State> builder() {
         return new EndpointBuilder<>();
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public BiFunction<State, byte[], Boolean> getReplyHandler() {
-        return replyHandler;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public Function<State, String> getKeyProvider() {
-        return keyProvider;
-    }
-
-    public Function<State, C> getValueProvider() {
-        return valueProvider;
     }
 
     public static class EndpointBuilder<C extends Command, State> {
