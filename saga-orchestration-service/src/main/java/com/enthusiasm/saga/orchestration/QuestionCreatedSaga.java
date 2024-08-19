@@ -17,7 +17,7 @@ public class QuestionCreatedSaga {
             .withTopic("post")
             .withHeader("COMMAND_TYPE", "CREATE_POST_COMMAND")
             .withReplyHandler(QuestionCreateState::handleCreatePostResponse) // todo: fix reply handle
-            .withKeyProvider(QuestionCreateState::getUserId)
+            .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::createPostCommand)
             .build();
 
@@ -26,7 +26,7 @@ public class QuestionCreatedSaga {
             .withTopic("post")
             .withHeader("COMMAND_TYPE", "CANCEL_POST_COMMAND")
             .withReplyHandler(QuestionCreateState::handleCancelPostResponse)
-            .withKeyProvider(QuestionCreateState::getUserId)
+            .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::cancelPostCommand)
             .build();
 
@@ -35,24 +35,26 @@ public class QuestionCreatedSaga {
             .withTopic("")
             .withHeader("", "")
             .withReplyHandler(QuestionCreateState::handleHoldRewardResponse)
-            .withKeyProvider(QuestionCreateState::getUserId)
+            .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::holdRewardCommand)
             .build();
 
     private static Endpoint<CreateNotificationCommand, QuestionCreateState> CREATE_NOTIFICATION = Endpoint.<CreateNotificationCommand, QuestionCreateState>builder()
             .withService("notification-service")
             .withTopic("")
-            .withKeyProvider(QuestionCreateState::getUserId)
+            .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::createNotificationCommand)
             .build();
 
 
     @Bean
-    SagaDefinition<QuestionCreateState> exampleSaga() {
+     SagaDefinition<QuestionCreateState> questionCreateStateDefinition() {
 
         // todo: auto generate stepId
         return SagaDefinition.<QuestionCreateState>builder("orchestration-create-post")
+                .withStateClass(QuestionCreateState.class)
                 .withDescription("User create post with reward")
+                .withInitializedFunction(QuestionCreateState::fromByte)
                 .step()
                     .withDescription("")
                     .invoke(FORUM_CREATE_POST).withCompensation(FORUM_CANCEL_POST)

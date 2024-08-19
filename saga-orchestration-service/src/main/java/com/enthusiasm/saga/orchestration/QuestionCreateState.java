@@ -1,16 +1,17 @@
 package com.enthusiasm.saga.orchestration;
 
+import com.enthusiasm.common.jackson.DeserializerUtils;
+import com.enthusiasm.saga.core.SagaState;
 import com.enthusiasm.saga.orchestration.command.CancelPostCommand;
 import com.enthusiasm.saga.orchestration.command.CreateNotificationCommand;
 import com.enthusiasm.saga.orchestration.command.CreatePostCommand;
 import com.enthusiasm.saga.orchestration.command.HoldRewardCommand;
+import org.json.JSONPropertyIgnore;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class QuestionCreateState {
-    private State state;
-
+public class QuestionCreateState implements SagaState {
     private final UUID postId;
     private final UUID userId;
 
@@ -22,8 +23,9 @@ public class QuestionCreateState {
         this.reward = reward;
     }
 
-    public String getUserId() {
-        return userId.toString();
+    public static QuestionCreateState fromByte(byte[] bytes) {
+        CreatePostCommand command = DeserializerUtils.deserialize(bytes, CreatePostCommand.class);
+        return new QuestionCreateState(command.postId(), command.userId(), command.reward());
     }
 
     public CreatePostCommand createPostCommand() {
@@ -55,8 +57,8 @@ public class QuestionCreateState {
         return new CreateNotificationCommand();
     }
 
-    enum State {
-        REQUEST_POSTING,
-        PAYMENT_AWAIT
+    @Override
+    public String getId() {
+        return userId.toString();
     }
 }

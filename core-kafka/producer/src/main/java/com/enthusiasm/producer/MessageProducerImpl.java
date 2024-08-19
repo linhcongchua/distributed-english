@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class MessageProducerImpl implements MessageProducer, Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProducerImpl.class);
@@ -42,6 +43,14 @@ public class MessageProducerImpl implements MessageProducer, Closeable {
             recordHeaders.add(new RecordHeader(headerKey, headerValue.getBytes(StandardCharsets.UTF_8)));
         });
         return recordHeaders;
+    }
+
+
+    @Override
+    public void send(String topic, String key, byte[] value, Supplier<List<Header>> headersSupplier) {
+        ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, null, key, value, headersSupplier.get());
+        delegateProducer.send(record);
+        LOGGER.info("Sent message to topic {} with key {}", topic, key);
     }
 
 

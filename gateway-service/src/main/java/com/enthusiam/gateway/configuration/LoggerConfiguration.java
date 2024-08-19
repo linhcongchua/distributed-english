@@ -13,7 +13,7 @@ public class LoggerConfiguration {
         filter.setIncludePayload(true);
         filter.setMaxPayloadLength(10_000);
         filter.setIncludeHeaders(true);
-        filter.setAfterMessagePrefix("Request data: ");
+        filter.setAfterMessagePrefix("---> Received request: ");
         return filter;
     }
 }

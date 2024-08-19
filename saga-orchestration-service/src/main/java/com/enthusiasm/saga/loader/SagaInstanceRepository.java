@@ -1,8 +1,8 @@
 package com.enthusiasm.saga.loader;
 
-public class SagaInstanceRepository {
+public interface SagaInstanceRepository {
 
-    public <T> T getInstance(String instanceId) {
-        return null; // todo:
-    }
+    <T> T getInstance(String instanceId, Class<T> clazz);
+
+    <T> void saveInstance(T instance, String keyId);
 }

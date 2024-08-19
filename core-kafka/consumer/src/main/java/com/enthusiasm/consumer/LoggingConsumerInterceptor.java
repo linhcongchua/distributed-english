@@ -20,7 +20,10 @@ public class LoggingConsumerInterceptor implements ConsumerInterceptor<String, b
 
     @Override
     public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        LOGGER.info("Submitted offsets {}", offsets);
+        if (offsets.isEmpty()) {
+            return;
+        }
+//        LOGGER.info("Submitted offsets {}", offsets); // todo fix what the
     }
 
     @Override

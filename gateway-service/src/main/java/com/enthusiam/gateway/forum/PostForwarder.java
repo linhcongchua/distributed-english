@@ -1,13 +1,18 @@
 package com.enthusiam.gateway.forum;
 
+import com.enthusiam.gateway.common.SagaHeader;
 import com.enthusiam.gateway.forum.command.CreatePostCommand;
 import com.enthusiam.gateway.forum.command.CreatePostRequest;
 import com.enthusiam.gateway.forum.command.CreatePostResponse;
 import com.enthusiam.gateway.forum.command.PostDetailResponse;
 import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.producer.MessageProducer;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,7 +31,11 @@ public class PostForwarder {
         UUID postId = UUID.randomUUID();
         var command = new CreatePostCommand(
                 postId, request.postTitle(), request.postDetail(), request.userId(), request.reward());
-        messageProducer.send("saga-orchestration-post-creating", request.userId().toString(), SerializerUtils.serializeToJsonBytes(command));
+        messageProducer.send("orchestration-create-post", request.userId().toString(), SerializerUtils.serializeToJsonBytes(command),
+                () -> {
+                    RecordHeader recordHeader = new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(SagaHeader.getInitial()));
+                    return List.of(recordHeader);
+                });
         return new CreatePostResponse(postId);
     }
 

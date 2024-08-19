@@ -1,6 +1,7 @@
 package com.enthusiasm.saga.loader;
 
 import com.enthusiasm.consumer.ConsumerProperties;
+import com.enthusiasm.producer.MessageProducer;
 import com.enthusiasm.saga.core.SagaDefinition;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -15,8 +16,14 @@ public class SagaDefinitionLoader implements BeanPostProcessor, ApplicationConte
 
     private final SagaDefinitionContainer sagaDefinitionContainer;
 
-    public SagaDefinitionLoader(ConsumerProperties consumerProperties) {
+    private final SagaInstanceRepository sagaInstanceRepository;
+
+    private final MessageProducer messageProducer;
+
+    public SagaDefinitionLoader(ConsumerProperties consumerProperties, SagaInstanceRepository sagaInstanceRepository, MessageProducer messageProducer) {
         this.consumerProperties = consumerProperties;
+        this.sagaInstanceRepository = sagaInstanceRepository;
+        this.messageProducer = messageProducer;
         this.sagaDefinitionContainer = new SagaDefinitionContainer();
     }
 
@@ -43,7 +50,7 @@ public class SagaDefinitionLoader implements BeanPostProcessor, ApplicationConte
     @Override
     public void afterSingletonsInstantiated() {
         // start listener
-        SagaSubscribeManager sagaSubscribeManager = new SagaSubscribeManager(sagaDefinitionContainer.getDefinitions(), consumerProperties);
+        SagaSubscribeManager sagaSubscribeManager = new SagaSubscribeManager(sagaDefinitionContainer.getDefinitions(), consumerProperties, sagaInstanceRepository, messageProducer);
         sagaSubscribeManager.start();
     }
 
