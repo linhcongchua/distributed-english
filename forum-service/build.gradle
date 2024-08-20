@@ -16,6 +16,7 @@ dependencies {
     implementation project(":core-kafka:producer")
     implementation project(":core-outbox")
     implementation project(":core-distpatcher")
+    implementation project(":common-saga")
 
     implementation('org.apache.kafka:kafka-clients:3.7.1') {
         transitive = true
@@ -24,8 +25,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'org.postgresql:postgresql:42.7.2'
-
-
+    implementation "org.flywaydb:flyway-database-postgresql"
 
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

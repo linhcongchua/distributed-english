@@ -1,6 +1,6 @@
 package com.enthusiasm.saga.orchestration.command;
 
-import com.enthusiasm.saga.core.Command;
+import com.enthusiasm.common.core.Command;
 
 import java.math.BigDecimal;
 import java.util.UUID;

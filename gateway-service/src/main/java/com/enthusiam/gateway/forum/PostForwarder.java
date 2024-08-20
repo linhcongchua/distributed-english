@@ -1,17 +1,15 @@
 package com.enthusiam.gateway.forum;
 
-import com.enthusiam.gateway.common.SagaHeader;
+import com.enthusiasm.common.core.SagaHeader;
 import com.enthusiam.gateway.forum.command.CreatePostCommand;
 import com.enthusiam.gateway.forum.command.CreatePostRequest;
 import com.enthusiam.gateway.forum.command.CreatePostResponse;
 import com.enthusiam.gateway.forum.command.PostDetailResponse;
 import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.producer.MessageProducer;
-import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

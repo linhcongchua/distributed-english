@@ -1,4 +1,6 @@
-package com.enthusiasm.forum.commands;
+package com.enthusiasm.common.forum.command;
+
+import com.enthusiasm.common.core.Command;
 
 import java.util.UUID;
 
@@ -7,5 +9,5 @@ public record CreatePostCommand(
         String postTitle,
         String postDetail,
         UUID userId
-) {
+) implements Command {
 }

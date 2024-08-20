@@ -17,7 +17,6 @@ public class PostEntity {
     private String title;
     private String detail;
     private UUID userId;
-
     private boolean isDeleted;
 
     public PostEntity() {

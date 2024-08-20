@@ -27,14 +27,14 @@ public class MessageProducerImpl implements MessageProducer, Closeable {
     public void send(String topic, String key, byte[] value) {
         ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, key, value);
         delegateProducer.send(record);
-        LOGGER.info("Sent message to topic {} with key {}", topic, key);
+        LOGGER.info("Sent message to topic {} with key {} and value {}", topic, key, new String(value, StandardCharsets.UTF_8));
     }
 
     @Override
     public void send(String topic, String key, byte[] value, Map<String, String> headers) {
         ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, null, key, value, toList(headers));
         delegateProducer.send(record);
-        LOGGER.info("Sent message to topic {} with key {}", topic, key);
+        LOGGER.info("Sent message to topic {} with key {} and value {} headers {}", topic, key, new String(value, StandardCharsets.UTF_8), headers);
     }
 
     private List<Header> toList(Map<String, String> headers) {
@@ -48,9 +48,10 @@ public class MessageProducerImpl implements MessageProducer, Closeable {
 
     @Override
     public void send(String topic, String key, byte[] value, Supplier<List<Header>> headersSupplier) {
-        ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, null, key, value, headersSupplier.get());
+        List<Header> headers = headersSupplier.get();
+        ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, null, key, value, headers);
         delegateProducer.send(record);
-        LOGGER.info("Sent message to topic {} with key {}", topic, key);
+        LOGGER.info("Sent message to topic {} with key {} and value {} headers {}", topic, key, new String(value, StandardCharsets.UTF_8), headers);
     }
 
 

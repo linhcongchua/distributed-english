@@ -1,5 +1,7 @@
 package com.enthusiasm.saga.core;
 
+import com.enthusiasm.common.core.Command;
+
 import java.util.*;
 import java.util.function.Function;
 

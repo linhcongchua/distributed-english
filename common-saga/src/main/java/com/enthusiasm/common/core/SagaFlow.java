@@ -1,4 +1,4 @@
-package com.enthusiasm.saga.core;
+package com.enthusiasm.common.core;
 
 public enum SagaFlow {
     NORMAL,

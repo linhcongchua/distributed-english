@@ -1,7 +1,12 @@
 package com.enthusiasm.saga.orchestration.command;
 
-import com.enthusiasm.saga.core.Command;
+import com.enthusiasm.common.core.Command;
 
-public class CreateNotificationCommand implements Command {
+import java.util.UUID;
+
+public record CreateNotificationCommand(
+        UUID postId,
+        UUID userId
+) implements Command {
 
 }

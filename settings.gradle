@@ -13,4 +13,5 @@ include 'forum-service'
 include 'gateway-service'
 include 'common-jackson'
 include 'core-distpatcher'
+include 'common-saga'
 

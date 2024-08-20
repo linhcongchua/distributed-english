@@ -1,5 +1,6 @@
 package com.enthusiasm.saga.core;
 
+import com.enthusiasm.common.core.Command;
 import lombok.Getter;
 
 import java.util.HashMap;

@@ -8,6 +8,7 @@ import org.apache.kafka.common.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
@@ -64,22 +65,55 @@ public class CommandListenerContainer {
         @Override
         public void accept(ConsumerRecord<String, byte[]> record) {
             try {
-                Headers headers = record.headers();
-                Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE"); // todo: config debezium header router
-                String  commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
-                Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
-                Method method = methodHandler.get(commandType);
-                if (method == null) {
-                    throw new NotFoundCommandTypeHandler(commandType);
-                }
+                LOGGER.info("Handling message value {} header {}", new String(record.value(), StandardCharsets.UTF_8), record.headers());
+
+                Method method = getMethod(record);
+
+                // todo: fix here 20-8
                 Parameter[] parameters = method.getParameters();
-                Parameter parameter = parameters[0];
-                Object parameter1 = DeserializerUtils.deserialize(record.value(), parameter.getType());
+                Object[] parametersValue = new Object[parameters.length];
+                for (int i = 0; i < parameters.length; i++) {
+                    Parameter parameter = parameters[i];
+                    // check body | header
+                    byte[] value = getValueFromRecord(record, parameter);
+                    Object parameterValue = DeserializerUtils.deserialize(value, parameter.getType());
+                    parametersValue[i] = parameterValue;
+                }
+
                 method.setAccessible(true);
-                method.invoke(instance, parameter1);
+                method.invoke(instance, parametersValue);
             } catch (Exception e) {
                 LOGGER.error("Error when handle message", e);
             }
+        }
+
+        private Method getMethod(ConsumerRecord<String, byte[]> record) {
+            Headers headers = record.headers();
+            Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE"); // todo: config debezium header router
+            String commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
+
+            Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
+            Method method = methodHandler.get(commandType);
+            if (method == null) {
+                throw new NotFoundCommandTypeHandler(commandType);
+            }
+            return method;
+        }
+
+        private byte[] getValueFromRecord(ConsumerRecord<String, byte[]> record, Parameter parameter) {
+            CommandBody commandBody = parameter.getAnnotation(CommandBody.class);
+            if (commandBody != null) {
+                return record.value();
+            }
+
+            CommandHeader commandHeader = parameter.getAnnotation(CommandHeader.class);
+            if (commandHeader != null) {
+                Headers headers = record.headers();
+                Header header = headers.lastHeader(commandHeader.value());
+                return header.value();
+            }
+
+            throw new RuntimeException("Cannot detect the parameter value!");
         }
     }
 

@@ -1,5 +1,8 @@
 package com.enthusiasm.saga.loader;
 
+import com.enthusiasm.common.core.Command;
+import com.enthusiasm.common.core.SagaFlow;
+import com.enthusiasm.common.core.SagaHeader;
 import com.enthusiasm.common.jackson.DeserializerUtils;
 import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.consumer.MessageHandler;
@@ -8,12 +11,12 @@ import com.enthusiasm.saga.core.*;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class SagaMessageHandler<State extends SagaState> implements MessageHandler {
@@ -50,21 +53,21 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
             }
 
 
-            State instance = sagaInstanceRepository.getInstance(sagaHeader.getInstanceId(), sagaDefinition.stateClass());
+            State instance = sagaInstanceRepository.getInstance(sagaHeader.instanceId(), sagaDefinition.stateClass());
 
-            int indexStep = getIndexStep(sagaDefinition.sagaSteps(), sagaHeader.getStepId());
+            int indexStep = getIndexStep(sagaDefinition.sagaSteps(), sagaHeader.stepId());
 
-            if (indexStep == -1) {
-                throw new RuntimeException("Cannot find step by step id: " + sagaHeader.getStepId());
+            if (indexStep == -1) { // todo: magic number
+                throw new RuntimeException("Cannot find step by step id: " + sagaHeader.stepId());
             }
 
             SagaStep<State> currentStep = sagaDefinition.sagaSteps().get(indexStep);
-            switch (sagaHeader.getFlow()) {
+            switch (sagaHeader.flow()) {
                 case NORMAL -> {
                     // handle reply
                     Endpoint<?, State> endpoint = currentStep.getEndpoint();
                     BiFunction<State, byte[], Boolean> replyHandler = endpoint.getReplyHandler();
-                    Boolean status = replyHandler.apply(instance, messageValue);
+                    Boolean status = replyHandler.apply(instance, messageValue); // handle response here
 
                     if (status) { // send message trigger next step
                         int indexNextStep = indexStep + 1;
@@ -102,12 +105,7 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
 
         SagaStep<State> nextStep = sagaDefinition.sagaSteps().get(currentIndex);
         Endpoint<?, State> nextEndpoint = nextStep.getEndpoint();
-        messageProducer.send(
-                nextEndpoint.getTopic(),
-                nextEndpoint.getKeyProvider().apply(instance),
-                SerializerUtils.serializeToJsonBytes(nextEndpoint.getValueProvider().apply(instance)),
-                nextEndpoint.getHeaders() // todo: add header
-        );
+        trigger(nextStep, nextEndpoint, instance, SagaFlow.NORMAL);
     }
 
     private void triggerCompensation(int currentIndex, State instance) {
@@ -120,12 +118,39 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
         }
         SagaStep<State> nextStep = sagaDefinition.sagaSteps().get(indexNextStep);
         Endpoint<?, State> nextStepCompensation = nextStep.getCompensation().get();
+        trigger(nextStep, nextStepCompensation, instance, SagaFlow.COMPENSATION);
+    }
+
+    private void trigger(SagaStep<State> nextStep, Endpoint<?, State> endpoint, State instance, SagaFlow flow) {
+        String key = endpoint.getKeyProvider().apply(instance);
+        Command command = endpoint.getValueProvider().apply(instance);
+        byte[] value = SerializerUtils.serializeToJsonBytes(command);
+
         messageProducer.send(
-                nextStepCompensation.getTopic(),
-                nextStepCompensation.getKeyProvider().apply(instance),
-                SerializerUtils.serializeToJsonBytes(nextStepCompensation.getValueProvider().apply(instance)),
-                nextStepCompensation.getHeaders()
+                endpoint.getTopic(),
+                key,
+                value,
+                () -> {
+                    List<Header> headers = new ArrayList<>();
+                    for (var header : endpoint.getHeaders().entrySet()) {
+                        headers.add(new RecordHeader(header.getKey(), header.getValue().getBytes(StandardCharsets.UTF_8)));
+                    }
+
+                    SagaHeader sagaHeader = getSagaHeader(nextStep, instance, flow);
+                    headers.add(new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(sagaHeader)));
+
+                    return headers;
+                }
         );
+    }
+
+    private SagaHeader getSagaHeader(SagaStep<State> nextStep, State instance, SagaFlow flow) {
+        return SagaHeader.builder()
+                .topic(sagaDefinition.topic())
+                .stepId(nextStep.getStepId().toString())
+                .instanceId(instance.getId())
+                .flow(flow)
+                .build();
     }
 
     private int getIndexStep(List<SagaStep<State>> sagaSteps, String stepId) { // todo: should using cache here
@@ -146,4 +171,6 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
         }
         return DeserializerUtils.deserialize(valueHeader, clazz);
     }
+
+
 }
