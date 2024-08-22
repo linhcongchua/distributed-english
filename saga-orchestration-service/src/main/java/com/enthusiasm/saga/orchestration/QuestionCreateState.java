@@ -11,11 +11,14 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public class QuestionCreateState implements SagaState {
-    private final UUID postId;
-    private final UUID userId;
-    private final String postTitle;
-    private final String postDetail;
-    private final BigDecimal reward;
+    private UUID postId;
+    private UUID userId;
+    private String postTitle;
+    private String postDetail;
+    private BigDecimal reward;
+
+    public QuestionCreateState() {
+    }
 
     public QuestionCreateState(UUID postId, UUID userId, String postTitle, String postDetail, BigDecimal reward) {
         this.postId = postId;
@@ -67,5 +70,45 @@ public class QuestionCreateState implements SagaState {
     @Override
     public String getId() {
         return userId.toString();
+    }
+
+    public UUID getPostId() {
+        return postId;
+    }
+
+    public void setPostId(UUID postId) {
+        this.postId = postId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public String getPostTitle() {
+        return postTitle;
+    }
+
+    public void setPostTitle(String postTitle) {
+        this.postTitle = postTitle;
+    }
+
+    public String getPostDetail() {
+        return postDetail;
+    }
+
+    public void setPostDetail(String postDetail) {
+        this.postDetail = postDetail;
+    }
+
+    public BigDecimal getReward() {
+        return reward;
+    }
+
+    public void setReward(BigDecimal reward) {
+        this.reward = reward;
     }
 }

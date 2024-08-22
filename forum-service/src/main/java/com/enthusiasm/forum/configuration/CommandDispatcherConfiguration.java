@@ -2,6 +2,10 @@ package com.enthusiasm.forum.configuration;
 
 import com.enthusiasm.consumer.ConsumerProperties;
 import com.enthusiasm.dispatcher.command.CommandBeanLoader;
+import com.enthusiasm.outbox.DefaultEventDispatcher;
+import com.enthusiasm.outbox.EventDispatcher;
+import com.enthusiasm.outbox.OutboxProperties;
+import jakarta.persistence.EntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,6 +33,21 @@ public class CommandDispatcherConfiguration {
                 return "forum-service";
             }
         };
+    }
+
+    @Bean
+    EventDispatcher eventDispatcher(EntityManager entityManager) {
+        return new DefaultEventDispatcher(entityManager, new OutboxProperties() {
+            @Override
+            public String getPathEventEntity() {
+                return "com.enthusiasm.forum.entities.EventPublish";
+            }
+
+            @Override
+            public boolean removeAfterInsert() {
+                return false;
+            }
+        });
     }
 
 

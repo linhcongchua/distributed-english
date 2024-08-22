@@ -20,7 +20,12 @@ import org.springframework.messaging.handler.annotation.Payload;
 import java.util.HashMap;
 import java.util.Map;
 
-@SpringBootApplication
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.enthusiasm.notification",
+                "com.enthusiasm.common.simple_web"
+        }
+)
 @EnableKafka
 public class NotificationServiceApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationServiceApplication.class);

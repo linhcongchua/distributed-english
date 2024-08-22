@@ -41,4 +41,13 @@ public class SerializerUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static JsonNode serializeToJsonNode(final Object object) {
+        try {
+            byte[] bytes = serializeToJsonBytes(object);
+            return OBJECT_MAPPER.readTree(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

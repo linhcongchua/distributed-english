@@ -65,6 +65,7 @@ services:
       - cdc-using-debezium-network
   redis:
     image: 'bitnami/redis:7.0'
+    restart: always
     ports:
       - '16379:6379'
     environment:

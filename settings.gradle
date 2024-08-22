@@ -14,4 +14,7 @@ include 'gateway-service'
 include 'common-jackson'
 include 'core-distpatcher'
 include 'common-saga'
+include 'common'
+include 'common:common-simple-web'
+findProject(':common:common-simple-web')?.name = 'common-simple-web'
 
