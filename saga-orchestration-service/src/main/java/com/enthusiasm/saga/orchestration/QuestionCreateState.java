@@ -1,6 +1,8 @@
 package com.enthusiasm.saga.orchestration;
 
+import com.enthusiasm.common.core.Response;
 import com.enthusiasm.common.core.SagaResponse;
+import com.enthusiasm.common.core.SuccessFailHandler;
 import com.enthusiasm.common.forum.command.PostCreatePendingEvent;
 import com.enthusiasm.common.notifcation.command.NotifyPostSuccessCommand;
 import com.enthusiasm.saga.core.SagaState;
@@ -10,7 +12,7 @@ import com.enthusiasm.saga.orchestration.command.HoldRewardCommand;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class QuestionCreateState implements SagaState {
+public class QuestionCreateState implements SagaState, SuccessFailHandler {
     private UUID postId;
     private UUID userId;
     private String postTitle;
@@ -32,16 +34,12 @@ public class QuestionCreateState implements SagaState {
         return new com.enthusiasm.common.forum.command.CreatePostCommand(postId, postTitle, postDetail, userId);
     }
 
-    public boolean handleCreatePostResponse(PostCreatePendingEvent response) {
-        //
-        return true;
-    } // todo: using reflection
-
     public CancelPostCommand cancelPostCommand() {
         return new CancelPostCommand(postId);
     }
 
-    public boolean handleCancelPostResponse(SagaResponse response) {
+    public boolean handleCancelPostResponse(Response response) {
+        // dead-letter
         return true;
     }
 
@@ -49,8 +47,8 @@ public class QuestionCreateState implements SagaState {
         return new HoldRewardCommand(userId, reward);
     }
 
-    public boolean handleHoldRewardResponse(SagaResponse response) {
-        return true;
+    public boolean handleHoldRewardResponse(Response response) {
+        return handleSuccessFail(response);
     }
 
 

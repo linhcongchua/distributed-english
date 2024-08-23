@@ -5,5 +5,6 @@ import com.enthusiasm.common.core.SagaHeader;
 public interface EMoneyCommandService {
     void handle(CreateAccountCommand command);
     void handle(DepositAmountCommand command);
-    void handle(WithdrawAmountCommand command, SagaHeader sagaHeader);
+    void handle(WithdrawAmountCommand command);
+    void handle(HoldAmountCommand command, SagaHeader sagaHeader);
 }

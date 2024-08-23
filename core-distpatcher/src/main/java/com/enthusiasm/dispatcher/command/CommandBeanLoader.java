@@ -2,6 +2,7 @@ package com.enthusiasm.dispatcher.command;
 
 import com.enthusiasm.consumer.ConsumerProperties;
 import com.enthusiasm.consumer.MessageSubscription;
+import com.enthusiasm.producer.MessageProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -25,9 +26,9 @@ public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextA
 
     private final ConsumerProperties consumerProperties;
 
-    public CommandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService) {
+    public CommandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService, MessageProducer messageProducer) {
         this.consumerProperties = consumerProperties;
-        listenerContainer = new CommandListenerContainer(executorService);
+        listenerContainer = new CommandListenerContainer(executorService, messageProducer);
     }
 
     @Override

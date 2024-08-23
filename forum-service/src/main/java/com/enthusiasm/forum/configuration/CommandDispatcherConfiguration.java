@@ -5,6 +5,9 @@ import com.enthusiasm.dispatcher.command.CommandBeanLoader;
 import com.enthusiasm.outbox.DefaultEventDispatcher;
 import com.enthusiasm.outbox.EventDispatcher;
 import com.enthusiasm.outbox.OutboxProperties;
+import com.enthusiasm.producer.MessageProducer;
+import com.enthusiasm.producer.MessageProducerImpl;
+import com.enthusiasm.producer.ProducerProperties;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +39,16 @@ public class CommandDispatcherConfiguration {
     }
 
     @Bean
+    ProducerProperties producerProperties() {
+        return new ProducerProperties() {
+            @Override
+            public String bootstrapServers() {
+                return "localhost:9092";
+            }
+        };
+    }
+
+    @Bean
     EventDispatcher eventDispatcher(EntityManager entityManager) {
         return new DefaultEventDispatcher(entityManager, new OutboxProperties() {
             @Override
@@ -50,9 +63,14 @@ public class CommandDispatcherConfiguration {
         });
     }
 
+    @Bean
+    MessageProducer messageProducer(ProducerProperties producerProperties) {
+        return new MessageProducerImpl(producerProperties);
+    }
+
 
     @Bean
-    public CommandBeanLoader commandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService) {
-        return new CommandBeanLoader(consumerProperties, executorService);
+    public CommandBeanLoader commandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService, MessageProducer messageProducer) {
+        return new CommandBeanLoader(consumerProperties, executorService, messageProducer);
     }
 }

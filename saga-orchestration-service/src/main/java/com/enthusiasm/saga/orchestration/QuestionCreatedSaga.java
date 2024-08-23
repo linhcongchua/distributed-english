@@ -1,8 +1,8 @@
 package com.enthusiasm.saga.orchestration;
 
+import com.enthusiasm.common.core.Response;
 import com.enthusiasm.common.core.SagaResponse;
 import com.enthusiasm.common.forum.command.CreatePostCommand;
-import com.enthusiasm.common.forum.command.PostCreatePendingEvent;
 import com.enthusiasm.common.notifcation.command.NotifyPostSuccessCommand;
 import com.enthusiasm.saga.core.Endpoint;
 import com.enthusiasm.saga.core.SagaDefinition;
@@ -13,39 +13,40 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class QuestionCreatedSaga {
+    private static final String COMMAND_TYPE = "COMMAND_TYPE";
 
-    private static Endpoint<CreatePostCommand, QuestionCreateState, PostCreatePendingEvent> FORUM_CREATE_POST = Endpoint.<CreatePostCommand, QuestionCreateState, PostCreatePendingEvent>builder()
+    private static Endpoint<CreatePostCommand, QuestionCreateState, Response> FORUM_CREATE_POST = Endpoint.<CreatePostCommand, QuestionCreateState, Response>builder()
             .withService("forum-service")
             .withTopic("post")
-            .withHeader("COMMAND_TYPE", "CREATE_POST_COMMAND")
-            .withReplyHandler(QuestionCreateState::handleCreatePostResponse) // todo: fix reply handle
+            .withHeader(COMMAND_TYPE, "CREATE_POST_COMMAND")
+            .withReplyHandler(QuestionCreateState::handleSuccessFail)
             .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::createPostCommand)
-            .build(PostCreatePendingEvent.class);
+            .build(Response.class);
 
-    private static Endpoint<CancelPostCommand, QuestionCreateState, SagaResponse> FORUM_CANCEL_POST = Endpoint.<CancelPostCommand, QuestionCreateState, SagaResponse>builder()
+    private static Endpoint<CancelPostCommand, QuestionCreateState, Response> FORUM_CANCEL_POST = Endpoint.<CancelPostCommand, QuestionCreateState, Response>builder()
             .withService("forum-service")
             .withTopic("post")
-            .withHeader("COMMAND_TYPE", "CANCEL_POST_COMMAND")
+            .withHeader(COMMAND_TYPE, "CANCEL_POST_COMMAND")
             .withReplyHandler(QuestionCreateState::handleCancelPostResponse)
             .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::cancelPostCommand)
-            .build(SagaResponse.class);
+            .build(Response.class);
 
-    private static Endpoint<HoldRewardCommand, QuestionCreateState, SagaResponse> ACCOUNT_HOLD_REWARD = Endpoint.<HoldRewardCommand, QuestionCreateState, SagaResponse>builder()
+    private static Endpoint<HoldRewardCommand, QuestionCreateState, Response> ACCOUNT_HOLD_REWARD = Endpoint.<HoldRewardCommand, QuestionCreateState, Response>builder()
             .withService("payment-service")
             .withTopic("emoney")
-            .withHeader("COMMAND_TYPE", "WITHDRAW_ACCOUNT_COMMAND")
+            .withHeader(COMMAND_TYPE, "WITHDRAW_ACCOUNT_COMMAND")
             .withReplyHandler(QuestionCreateState::handleHoldRewardResponse)
             .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::holdRewardCommand)
-            .build(SagaResponse.class);
+            .build(Response.class);
 
     private static Endpoint<NotifyPostSuccessCommand, QuestionCreateState, SagaResponse> CREATE_NOTIFICATION = Endpoint.<NotifyPostSuccessCommand, QuestionCreateState, SagaResponse>builder()
             .withService("notification-service")
             .withTopic("notify")
             .withKeyProvider(QuestionCreateState::getId)
-            .withValueProvider(QuestionCreateState::createNotificationCommand)
+            .withValueProvider(QuestionCreateState::createNotificationCommand) // retry mechanism
             .build(SagaResponse.class); // todo
 
 

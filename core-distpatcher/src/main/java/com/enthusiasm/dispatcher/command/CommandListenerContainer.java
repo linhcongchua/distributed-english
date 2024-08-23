@@ -2,13 +2,13 @@ package com.enthusiasm.dispatcher.command;
 
 import com.enthusiasm.common.jackson.DeserializerUtils;
 import com.enthusiasm.consumer.*;
+import com.enthusiasm.producer.MessageProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
@@ -25,8 +25,11 @@ public class CommandListenerContainer {
 
     private final ExecutorService executorService;
 
-    public CommandListenerContainer(ExecutorService executorService) {
+    private final MessageProducer messageProducer;
+
+    public CommandListenerContainer(ExecutorService executorService, MessageProducer messageProducer) {
         this.executorService = executorService;
+        this.messageProducer = messageProducer;
     }
 
     protected void registerListenerContainer(CommandHandlerDescription handlerDescription, Object bean, ConsumerProperties consumerProperties) {
@@ -37,7 +40,7 @@ public class CommandListenerContainer {
 
     private MessageConsumer createMessageConsumer(CommandHandlerDescription handlerDescription, Object instanceTarget, ConsumerProperties consumerProperties) {
         MessageConsumer messageConsumer = null;
-        CommandMessageHandler handler = new CommandMessageHandler(handlerDescription, instanceTarget);
+        CommandMessageHandler handler = new CommandMessageHandler(handlerDescription, instanceTarget, messageProducer);
         if (handlerDescription.isThreadPerPartition()) {
             messageConsumer = new MessageConsumerMultiThreadImpl(
                     executorService,
@@ -56,20 +59,22 @@ public class CommandListenerContainer {
     private static class CommandMessageHandler implements MessageHandler {
         private final CommandHandlerDescription handlerDescription;
         private final Object instance;
+        private final MessageProducer messageProducer;
 
-        public CommandMessageHandler(CommandHandlerDescription handlerDescription, Object instance) {
+        public CommandMessageHandler(CommandHandlerDescription handlerDescription, Object instance, MessageProducer messageProducer) {
             this.handlerDescription = handlerDescription;
             this.instance = instance;
+            this.messageProducer = messageProducer;
         }
 
         @Override
         public void accept(ConsumerRecord<String, byte[]> record) {
+            LOGGER.info("Handling message value {} header {}", new String(record.value(), StandardCharsets.UTF_8), record.headers());
+
             try {
-                LOGGER.info("Handling message value {} header {}", new String(record.value(), StandardCharsets.UTF_8), record.headers());
 
                 Method method = getMethod(record);
 
-                // todo: fix here 20-8
                 Parameter[] parameters = method.getParameters();
                 Object[] parametersValue = new Object[parameters.length];
                 for (int i = 0; i < parameters.length; i++) {
@@ -83,13 +88,20 @@ public class CommandListenerContainer {
                 method.setAccessible(true);
                 method.invoke(instance, parametersValue);
             } catch (Exception e) {
+                if (e instanceof ReplyException replyException) {
+                    messageProducer.send(
+                            replyException.getTopic(),
+                            replyException.getKey(),
+                            replyException.getValue(),
+                            replyException::getHeaders);
+                }
                 LOGGER.error("Error when handle message", e);
             }
         }
 
         private Method getMethod(ConsumerRecord<String, byte[]> record) {
             Headers headers = record.headers();
-            Header commandTypeHeader = headers.lastHeader("COMMAND_TYPE"); // todo: config debezium header router
+            Header commandTypeHeader = headers.lastHeader(Constants.COMMAND_TYPE);
             String commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
 
             Map<String, Method> methodHandler = handlerDescription.getMethodHandler();

@@ -14,6 +14,7 @@ repositories {
 dependencies {
     implementation project(":common-jackson")
     implementation project(":core-kafka:consumer")
+    implementation project(":core-kafka:producer")
 
     implementation('org.apache.kafka:kafka-clients:3.7.1') {
         transitive = true
