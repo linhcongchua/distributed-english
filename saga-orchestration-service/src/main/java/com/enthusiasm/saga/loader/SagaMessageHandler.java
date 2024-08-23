@@ -3,11 +3,15 @@ package com.enthusiasm.saga.loader;
 import com.enthusiasm.common.core.Command;
 import com.enthusiasm.common.core.SagaFlow;
 import com.enthusiasm.common.core.SagaHeader;
+import com.enthusiasm.common.core.SagaResponse;
 import com.enthusiasm.common.jackson.DeserializerUtils;
 import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.consumer.MessageHandler;
 import com.enthusiasm.producer.MessageProducer;
-import com.enthusiasm.saga.core.*;
+import com.enthusiasm.saga.core.Endpoint;
+import com.enthusiasm.saga.core.SagaDefinition;
+import com.enthusiasm.saga.core.SagaState;
+import com.enthusiasm.saga.core.SagaStep;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
@@ -16,10 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
-public class SagaMessageHandler<State extends SagaState> implements MessageHandler {
+public class SagaMessageHandler<State extends SagaState, Reply extends SagaResponse> implements MessageHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SagaMessageHandler.class);
 
     private final SagaDefinition<State> sagaDefinition;
@@ -46,7 +52,7 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
             byte[] messageValue = record.value();
 
             if (sagaHeader.isInitial()) {
-                State instance = sagaDefinition.initializedFunction().apply(messageValue);
+                State instance = DeserializerUtils.deserialize(messageValue, sagaDefinition.stateClass());
                 sagaInstanceRepository.saveInstance(instance, instance.getId());
                 triggerStep(0, instance);
                 return;
@@ -65,9 +71,10 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
             switch (sagaHeader.flow()) {
                 case NORMAL -> {
                     // handle reply
-                    Endpoint<?, State> endpoint = currentStep.getEndpoint();
-                    BiFunction<State, byte[], Boolean> replyHandler = endpoint.getReplyHandler();
-                    Boolean status = replyHandler.apply(instance, messageValue); // handle response here
+                    Endpoint<?, State, Reply> endpoint = (Endpoint<?, State, Reply>) currentStep.getEndpoint();
+                    BiFunction<State, Reply, Boolean> replyHandler = endpoint.getReplyHandler();
+                    Reply replyValue = DeserializerUtils.deserialize(messageValue, endpoint.getReplyClass());
+                    Boolean status = replyHandler.apply(instance, replyValue); // handle response here
 
                     if (status) { // send message trigger next step
                         int indexNextStep = indexStep + 1;
@@ -77,14 +84,16 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
                     }
                 }
                 case COMPENSATION -> {
-                    Optional<Endpoint<?, State>> compensation = currentStep.getCompensation();
-                    if (compensation.isEmpty()) {
+
+                    Endpoint<?, State, ?> compensation = currentStep.getCompensation();
+                    if (compensation == null) {
                         LOGGER.warn("Compensation is empty!");
                         break;
                     }
-                    Endpoint<?, State> compensationEndpoint = compensation.get();
-                    BiFunction<State, byte[], Boolean> replyHandler = compensationEndpoint.getReplyHandler();
-                    Boolean status = replyHandler.apply(instance, messageValue);
+                    Endpoint<?, State, Reply> compensationEndpoint = (Endpoint<?, State, Reply>) compensation;
+                    BiFunction<State, Reply, Boolean> replyHandler = compensationEndpoint.getReplyHandler();
+                    Reply replyValue = DeserializerUtils.deserialize(messageValue, compensationEndpoint.getReplyClass());
+                    Boolean status = replyHandler.apply(instance, replyValue);
                     if (!status) {
                         LOGGER.warn("Fail to handle compensation!");
                     }
@@ -104,24 +113,24 @@ public class SagaMessageHandler<State extends SagaState> implements MessageHandl
         }
 
         SagaStep<State> nextStep = sagaDefinition.sagaSteps().get(currentIndex);
-        Endpoint<?, State> nextEndpoint = nextStep.getEndpoint();
+        Endpoint<?, State, ?> nextEndpoint = nextStep.getEndpoint();
         trigger(nextStep, nextEndpoint, instance, SagaFlow.NORMAL);
     }
 
     private void triggerCompensation(int currentIndex, State instance) {
         int indexNextStep = currentIndex - 1;
-        while (indexNextStep >= 0 && sagaDefinition.sagaSteps().get(indexNextStep).getCompensation().isEmpty()) {
+        while (indexNextStep >= 0 && sagaDefinition.sagaSteps().get(indexNextStep).getCompensation() == null) {
             indexNextStep--;
         }
         if (indexNextStep < 0) {
             return;
         }
         SagaStep<State> nextStep = sagaDefinition.sagaSteps().get(indexNextStep);
-        Endpoint<?, State> nextStepCompensation = nextStep.getCompensation().get();
+        Endpoint<?, State, ?> nextStepCompensation = nextStep.getCompensation();
         trigger(nextStep, nextStepCompensation, instance, SagaFlow.COMPENSATION);
     }
 
-    private void trigger(SagaStep<State> nextStep, Endpoint<?, State> endpoint, State instance, SagaFlow flow) {
+    private void trigger(SagaStep<State> nextStep, Endpoint<?, State, ?> endpoint, State instance, SagaFlow flow) {
         String key = endpoint.getKeyProvider().apply(instance);
         Command command = endpoint.getValueProvider().apply(instance);
         byte[] value = SerializerUtils.serializeToJsonBytes(command);

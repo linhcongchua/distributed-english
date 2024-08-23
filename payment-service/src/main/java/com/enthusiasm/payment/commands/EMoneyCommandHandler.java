@@ -1,10 +1,15 @@
 package com.enthusiasm.payment.commands;
 
 
+import com.enthusiasm.common.core.SagaHeader;
+import com.enthusiasm.dispatcher.command.CommandBody;
 import com.enthusiasm.dispatcher.command.CommandDispatcher;
 import com.enthusiasm.dispatcher.command.CommandHandler;
+import com.enthusiasm.dispatcher.command.CommandHeader;
 import com.enthusiasm.events.repository.EventRepository;
+import com.enthusiasm.outbox.EventDispatcher;
 import com.enthusiasm.payment.domain.EMoneyAggregate;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,8 +18,11 @@ public class EMoneyCommandHandler implements EMoneyCommandService {
 
     private final EventRepository eventRepository;
 
-    public EMoneyCommandHandler(EventRepository eventRepository) {
+    private final EventDispatcher eventDispatcher;
+
+    public EMoneyCommandHandler(EventRepository eventRepository, EventDispatcher eventDispatcher) {
         this.eventRepository = eventRepository;
+        this.eventDispatcher = eventDispatcher;
     }
 
     @Override
@@ -34,10 +42,13 @@ public class EMoneyCommandHandler implements EMoneyCommandService {
     }
 
     @Override
+    @Transactional
     @CommandHandler(commandType = "WITHDRAW_ACCOUNT_COMMAND")
-    public void handle(WithdrawAmountCommand command) {
+    public void handle(@CommandBody WithdrawAmountCommand command, @CommandHeader("SAGA_HEADER") SagaHeader sagaHeader) {
         final var aggregate = eventRepository.load(command.aggregateId(), EMoneyAggregate.class);
         aggregate.withdraw(command.amount());
         eventRepository.save(aggregate);
+
+
     }
 }

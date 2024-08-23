@@ -28,7 +28,7 @@ public class SagaSubscribeManager {
     private List<MessageConsumer> createMessageConsumer(List<SagaDefinition<?>> sagaDefinitions) {
         List<MessageConsumer> consumers = new ArrayList<>(sagaDefinitions.size());
         sagaDefinitions.forEach(sagaDefinition -> {
-            final SagaMessageHandler<?> sagaMessageHandler = new SagaMessageHandler<>(sagaDefinition, sagaInstanceRepository, messageProducer);
+            final SagaMessageHandler<?, ?> sagaMessageHandler = new SagaMessageHandler<>(sagaDefinition, sagaInstanceRepository, messageProducer);
 
             MessageConsumer consumer = new MessageConsumerSingleThreadImpl(
                     consumerProperties,

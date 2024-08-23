@@ -1,6 +1,6 @@
-package com.enthusiasm.forum.events;
+package com.enthusiasm.common.forum.command;
 
-import com.enthusiasm.common.core.SuccessResponse;
+import com.enthusiasm.common.core.SagaResponse;
 import com.enthusiasm.common.jackson.SerializerUtils;
 import com.enthusiasm.outbox.ExportedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, SuccessResponse {
+public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, SagaResponse {
     private final UUID userId;
     private final String replyTopic;
     private final String sagaHeader;
@@ -43,7 +43,7 @@ public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, 
 
     @Override
     public JsonNode getPayload() { // value body
-        return SerializerUtils.serializeToJsonNode(response());
+        return SerializerUtils.serializeToJsonNode(success());
     }
 
     @Override

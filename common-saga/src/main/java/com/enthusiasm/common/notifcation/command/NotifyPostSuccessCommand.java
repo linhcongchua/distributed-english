@@ -1,10 +1,10 @@
-package com.enthusiasm.saga.orchestration.command;
+package com.enthusiasm.common.notifcation.command;
 
 import com.enthusiasm.common.core.Command;
 
 import java.util.UUID;
 
-public record CreateNotificationCommand(
+public record NotifyPostSuccessCommand(
         UUID postId,
         UUID userId
 ) implements Command {

@@ -8,7 +8,7 @@ import com.enthusiasm.dispatcher.command.CommandDispatcher;
 import com.enthusiasm.dispatcher.command.CommandHandler;
 import com.enthusiasm.dispatcher.command.CommandHeader;
 import com.enthusiasm.forum.entities.PostEntity;
-import com.enthusiasm.forum.events.PostCreatePendingEvent;
+import com.enthusiasm.common.forum.command.PostCreatePendingEvent;
 import com.enthusiasm.forum.repository.PostRepository;
 import com.enthusiasm.outbox.EventDispatcher;
 import jakarta.transaction.Transactional;

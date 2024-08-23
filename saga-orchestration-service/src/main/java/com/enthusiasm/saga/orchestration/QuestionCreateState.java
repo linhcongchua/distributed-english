@@ -1,10 +1,10 @@
 package com.enthusiasm.saga.orchestration;
 
-import com.enthusiasm.common.jackson.DeserializerUtils;
+import com.enthusiasm.common.core.SagaResponse;
+import com.enthusiasm.common.forum.command.PostCreatePendingEvent;
+import com.enthusiasm.common.notifcation.command.NotifyPostSuccessCommand;
 import com.enthusiasm.saga.core.SagaState;
 import com.enthusiasm.saga.orchestration.command.CancelPostCommand;
-import com.enthusiasm.saga.orchestration.command.CreateNotificationCommand;
-import com.enthusiasm.saga.orchestration.command.CreatePostCommand;
 import com.enthusiasm.saga.orchestration.command.HoldRewardCommand;
 
 import java.math.BigDecimal;
@@ -28,21 +28,12 @@ public class QuestionCreateState implements SagaState {
         this.reward = reward;
     }
 
-    public static QuestionCreateState fromByte(byte[] bytes) {
-        CreatePostCommand command = DeserializerUtils.deserialize(bytes, CreatePostCommand.class);
-        return new QuestionCreateState(
-                command.postId(),
-                command.userId(),
-                command.postTitle(),
-                command.postDetail(),
-                command.reward());
-    }
-
     public com.enthusiasm.common.forum.command.CreatePostCommand createPostCommand() {
         return new com.enthusiasm.common.forum.command.CreatePostCommand(postId, postTitle, postDetail, userId);
     }
 
-    public boolean handleCreatePostResponse(byte[] response) {
+    public boolean handleCreatePostResponse(PostCreatePendingEvent response) {
+        //
         return true;
     } // todo: using reflection
 
@@ -50,7 +41,7 @@ public class QuestionCreateState implements SagaState {
         return new CancelPostCommand(postId);
     }
 
-    public boolean handleCancelPostResponse(byte[] response) {
+    public boolean handleCancelPostResponse(SagaResponse response) {
         return true;
     }
 
@@ -58,13 +49,13 @@ public class QuestionCreateState implements SagaState {
         return new HoldRewardCommand(userId, reward);
     }
 
-    public boolean handleHoldRewardResponse(byte[] response) {
+    public boolean handleHoldRewardResponse(SagaResponse response) {
         return true;
     }
 
 
-    public CreateNotificationCommand createNotificationCommand() {
-        return new CreateNotificationCommand(postId, userId);
+    public NotifyPostSuccessCommand createNotificationCommand() {
+        return new NotifyPostSuccessCommand(postId, userId);
     }
 
     @Override

@@ -25,6 +25,7 @@ dependencies {
     implementation project(":core-outbox")
     implementation project(":core-distpatcher")
     implementation project(":common:common-simple-web")
+    implementation project(":common-saga")
 
     implementation('org.apache.kafka:kafka-clients:3.7.1') {
         transitive = true
