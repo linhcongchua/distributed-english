@@ -36,7 +36,7 @@ public class QuestionCreatedSaga {
     private static Endpoint<HoldRewardCommand, QuestionCreateState, Response> ACCOUNT_HOLD_REWARD = Endpoint.<HoldRewardCommand, QuestionCreateState, Response>builder()
             .withService("payment-service")
             .withTopic("emoney")
-            .withHeader(COMMAND_TYPE, "WITHDRAW_ACCOUNT_COMMAND")
+            .withHeader(COMMAND_TYPE, "HOLD_ACCOUNT_COMMAND")
             .withReplyHandler(QuestionCreateState::handleHoldRewardResponse)
             .withKeyProvider(QuestionCreateState::getId)
             .withValueProvider(QuestionCreateState::holdRewardCommand)

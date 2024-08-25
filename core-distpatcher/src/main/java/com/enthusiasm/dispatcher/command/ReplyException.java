@@ -1,6 +1,5 @@
 package com.enthusiasm.dispatcher.command;
 
-import com.enthusiasm.common.jackson.SerializerUtils;
 import lombok.Getter;
 import org.apache.kafka.common.header.Header;
 
@@ -18,25 +17,5 @@ public class ReplyException extends RuntimeException{
         this.key = key;
         this.value = value;
         this.headers = headers;
-    }
-
-    public ReplyException(String message, String topic, String key, List<Header> headers) {
-        super(message);
-        this.topic = topic;
-        this.key = key;
-        this.value = SerializerUtils.serializeToJsonBytes(new MessageDetail(message));
-        this.headers = headers;
-    }
-
-    public static class MessageDetail {
-        private final String exceptionMessage;
-
-        public MessageDetail(String exceptionMessage) {
-            this.exceptionMessage = exceptionMessage;
-        }
-
-        public String getExceptionMessage() {
-            return exceptionMessage;
-        }
     }
 }

@@ -56,7 +56,7 @@ public class EMoneyCommandHandler implements EMoneyCommandService {
     @Override
     @Transactional
     @CommandHandler(commandType = "HOLD_ACCOUNT_COMMAND")
-    public void handle(HoldAmountCommand command, SagaHeader sagaHeader) {
+    public void handle(@CommandBody HoldAmountCommand command, @CommandHeader("SAGA_HEADER") SagaHeader sagaHeader) {
         try { // todo: should I use AOP for remove try-catch block
             final var aggregate = eventRepository.load(command.userId(), EMoneyAggregate.class);
             aggregate.withdraw(command.amount());
@@ -70,7 +70,10 @@ public class EMoneyCommandHandler implements EMoneyCommandService {
             eventDispatcher.onExportedEvent(response);
         } catch (Exception exception) {
             RecordHeader header = new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(sagaHeader));
-            throw new ReplyException(exception.getMessage(), sagaHeader.topic(), command.userId(), List.of(header));
+            HoldAmountFail response = new HoldAmountFail(); // todo
+            throw new ReplyException(sagaHeader.topic(), command.userId(),
+                    SerializerUtils.serializeToJsonBytes(response)
+                    , List.of(header));
         }
     }
 }

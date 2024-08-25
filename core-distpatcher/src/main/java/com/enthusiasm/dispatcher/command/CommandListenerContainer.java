@@ -88,7 +88,7 @@ public class CommandListenerContainer {
                 method.setAccessible(true);
                 method.invoke(instance, parametersValue);
             } catch (Exception e) {
-                if (e instanceof ReplyException replyException) {
+                if (e.getCause() instanceof ReplyException replyException) {
                     messageProducer.send(
                             replyException.getTopic(),
                             replyException.getKey(),
