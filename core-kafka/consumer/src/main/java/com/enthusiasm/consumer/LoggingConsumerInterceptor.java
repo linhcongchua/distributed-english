@@ -14,18 +14,18 @@ public class LoggingConsumerInterceptor implements ConsumerInterceptor<String, b
 
     @Override
     public ConsumerRecords<String, byte[]> onConsume(ConsumerRecords<String, byte[]> records) {
-        LOGGER.info("Received message: {}", records);
+        LOGGER.info("---> Received {} messages", records.count());
         return records;
     }
 
     @Override
     public void onCommit(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        LOGGER.info("Submitted offsets {}", offsets);
+        // nothing to do
     }
 
     @Override
     public void close() {
-
+        // nothing to do
     }
 
     @Override

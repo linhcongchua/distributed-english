@@ -1,5 +1,7 @@
 package com.enthusiasm.events;
 
+import com.enthusiasm.common.jackson.SerializerUtils;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 

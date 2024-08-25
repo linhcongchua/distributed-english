@@ -17,7 +17,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=admin
-      - POSTGRES_MULTIPLE_DATABASES="account-service","forum-service","notification-service","payment-service"
+      - POSTGRES_MULTIPLE_DATABASES="saga-orchestration-service","forum-service","notification-service","payment-service"
     command: [ "postgres", "-c", "wal_level=logical" ]
     volumes:
       - db:/var/lib/postgresql/data
@@ -57,13 +57,31 @@ services:
       CONFIG_STORAGE_TOPIC: my_connect_configs
       OFFSET_STORAGE_TOPIC: my_connect_offsets
       STATUS_STORAGE_TOPIC: my_connect_statuses
-      ENABLE_DEBEZIUM_SCRIPTING: 'true'
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: 'false'
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      ENABLE_DEBEZIUM_SCRIPTING: 'false'
     links:
       - english-postgres
       - english-kafka
     networks:
       - cdc-using-debezium-network
+  redis:
+    image: 'bitnami/redis:7.0'
+    restart: always
+    ports:
+      - '16379:6379'
+    environment:
+      - REDIS_PASSWORD=redis_password
+    networks:
+      - cdc-using-debezium-network
+    volumes:
+      - redis_vol:/bitnami/redis/data
+
 volumes:
   db:
     name: postgres-distributed-english-data
+    driver: local
+  redis_vol:
+    name: redis-distributed-english-data
     driver: local

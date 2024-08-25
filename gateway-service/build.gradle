@@ -1,0 +1,30 @@
+plugins {
+    id("java")
+    id 'org.springframework.boot' version '3.3.1'
+    id 'io.spring.dependency-management' version '1.1.5'
+}
+
+group = "com.enthusiasm"
+version = "0.0.1-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(":common-jackson")
+    implementation project(":common-saga")
+    implementation project(":core-kafka:producer")
+    // todo security
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.apache.kafka:kafka-clients:3.7.1'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
