@@ -15,10 +15,13 @@ public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, 
     private final String replyTopic;
     private final String sagaHeader;
 
-    public PostCreatePendingEvent(UUID userId, String replyTopic, String sagaHeader) {
+    private final String spanTracing;
+
+    public PostCreatePendingEvent(UUID userId, String replyTopic, String sagaHeader, String spanTracing) {
         this.userId = userId;
         this.replyTopic = replyTopic;
         this.sagaHeader = sagaHeader;
+        this.spanTracing = spanTracing;
     }
 
     @Override
@@ -50,6 +53,7 @@ public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, 
     public Map<String, Object> getAdditionalFieldValues() {
         Map<String, Object> map = new HashMap<>();
         map.put("id", UUID.randomUUID().toString());
+        map.put("tracing", spanTracing);
         return map;
     }
 }

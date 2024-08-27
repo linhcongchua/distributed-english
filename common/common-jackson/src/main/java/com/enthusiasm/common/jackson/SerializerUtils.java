@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class SerializerUtils {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
@@ -24,6 +25,10 @@ public class SerializerUtils {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    public static String serializeToJsonStr(final Object object) {
+        return new String(serializeToJsonBytes(object), StandardCharsets.UTF_8);
     }
 
     public static <T> T deserializeFromJsonBytes(final byte[] jsonBytes, final Class<T> valueType) {

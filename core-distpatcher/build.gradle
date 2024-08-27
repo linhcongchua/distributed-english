@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(":common-jackson")
+    implementation project(":common:common-jackson")
     implementation project(":core-kafka:consumer")
     implementation project(":core-kafka:producer")
 

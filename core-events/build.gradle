@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(":common-jackson")
+    implementation project(":common:common-jackson")
     implementation project(":core-outbox")
 
     compileOnly 'org.projectlombok:lombok:1.18.32'

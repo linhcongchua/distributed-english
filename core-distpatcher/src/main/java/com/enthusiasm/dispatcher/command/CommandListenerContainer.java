@@ -70,7 +70,7 @@ public class CommandListenerContainer {
         @Override
         public void accept(ConsumerRecord<String, byte[]> record) {
             LOGGER.info("Handling message value {} header {}", new String(record.value(), StandardCharsets.UTF_8), record.headers());
-
+            // should I do tracing start here???
             try {
 
                 Method method = getMethod(record);

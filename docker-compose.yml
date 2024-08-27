@@ -9,7 +9,7 @@ networks:
 services:
   english-postgres:
     build:
-      context: ./z-docker-postgres
+      context: z-docker
     container_name: english-postgres
     restart: always
     ports:
@@ -77,6 +77,47 @@ services:
       - cdc-using-debezium-network
     volumes:
       - redis_vol:/bitnami/redis/data
+  jaeger:
+    container_name: jaeger_container
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "14250:14250"
+      - "16686:16686"
+    environment:
+      - COLLECTOR_OLTP_ENABLED=true
+      - SE_ENABLE_TRACING=true
+    networks:
+      - cdc-using-debezium-network
+  opentelemetry-collector:
+    container_name: opentelemetry_collector
+    image: otel/opentelemetry-collector-contrib:latest
+    restart: always
+    command:
+      - --config=/etc/otelcol-contrib/otel-collector.yml
+    volumes:
+      - ./z-docker/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
+    ports:
+      - "4317" # OTLP gRPC receiver
+    depends_on:
+      - jaeger
+    networks:
+      - cdc-using-debezium-network
+#  gateway-service:
+#    build:
+#      context: gateway-service
+#    container_name: gateway-service
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      OTEL_TRACES_EXPORTER: "jaeger"
+#      OTEL_EXPORTER_JAEGER_ENDPOINT: "http://jaeger_container:14250"
+#      OTEL_METRICS_EXPORTER: "logging"
+#      OTEL_LOGS_EXPORTER: "logging"
+#    depends_on:
+#      - jaeger
+#    networks:
+#      - cdc-using-debezium-network
 
 volumes:
   db:
