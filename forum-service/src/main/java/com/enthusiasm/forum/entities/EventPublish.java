@@ -22,18 +22,29 @@ public class EventPublish implements ExportedEvent<String, JsonNode> {
     private String type;
     private Instant timestamp;
 
+    private String tracing;
+
+    public String getTracing() {
+        return tracing;
+    }
+
+    public void setTracing(String tracing) {
+        this.tracing = tracing;
+    }
+
     @JdbcTypeCode(SqlTypes.JSON)
     private JsonNode payload;
 
     public EventPublish() {
     }
 
-    public EventPublish(UUID id, String aggregateId, String aggregateType, String type, Instant timestamp, JsonNode payload) {
+    public EventPublish(UUID id, String aggregateId, String aggregateType, String type, Instant timestamp, String tracing, JsonNode payload) {
         this.id = id;
         this.aggregateId = aggregateId;
         this.aggregateType = aggregateType;
         this.type = type;
         this.timestamp = timestamp;
+        this.tracing = tracing;
         this.payload = payload;
     }
 

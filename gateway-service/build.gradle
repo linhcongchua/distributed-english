@@ -7,13 +7,18 @@ plugins {
 group = "com.enthusiasm"
 version = "0.0.1-SNAPSHOT"
 
+configurations {
+    agent
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation project(":common-jackson")
-    implementation project(":common-saga")
+    agent "io.opentelemetry.javaagent:opentelemetry-javaagent:1.32.0"
+    implementation project(":common:common-jackson")
+    implementation project(":common:common-saga")
     implementation project(":core-kafka:producer")
     // todo security
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -23,6 +28,17 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+task copyAgent(type: Copy) {
+    from configurations.agent {
+        rename "opentelemetry-javaagent-.*\\.jar", "opentelemetry-javaagent.jar"
+    }
+    into layout.buildDirectory.dir("agent")
+}
+
+bootJar {
+    dependsOn copyAgent
 }
 
 tasks.test {

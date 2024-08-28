@@ -23,7 +23,7 @@ curl --location 'http://localhost:8083/connectors' \
         "transforms.outbox.table.field.event.key": "aggregate_id",
         "transforms.outbox.route.by.field": "aggregate_type",
         "transforms.outbox.route.topic.replacement": "${routedByValue}",
-        "transforms.outbox.table.fields.additional.placement": "type:header:SAGA_HEADER"
+        "transforms.outbox.table.fields.additional.placement": "type:header:SAGA_HEADER,tracing:header:TRACING"
     }
 }'
 ```

@@ -18,18 +18,27 @@ java {
 }
 
 dependencies {
-    implementation project(":common-jackson")
+    implementation project(":common:common-jackson")
+    implementation project(":common:common-simple-web")
+    implementation project(":common:common-saga")
+    implementation project(":common:common-open-telemetry")
     implementation project(":core-kafka:consumer")
     implementation project(":core-kafka:producer")
     implementation project(":core-events")
     implementation project(":core-outbox")
     implementation project(":core-distpatcher")
-    implementation project(":common:common-simple-web")
-    implementation project(":common-saga")
 
     implementation('org.apache.kafka:kafka-clients:3.7.1') {
         transitive = true
     }
+
+    implementation 'io.opentelemetry:opentelemetry-api:1.37.0'
+    implementation 'io.opentelemetry:opentelemetry-sdk-trace:1.37.0'
+    implementation 'io.opentelemetry:opentelemetry-extension-annotations:1.18.0'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp:1.37.0'
+    implementation 'io.opentelemetry:opentelemetry-sdk:1.37.0'
+    runtimeOnly 'io.opentelemetry:opentelemetry-semconv:1.29.0-alpha'
+    implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.37.0'
 
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'

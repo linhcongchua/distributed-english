@@ -12,6 +12,11 @@ import com.enthusiasm.saga.core.Endpoint;
 import com.enthusiasm.saga.core.SagaDefinition;
 import com.enthusiasm.saga.core.SagaState;
 import com.enthusiasm.saga.core.SagaStep;
+import com.enthusiasm.telemetry.TracingSpan;
+import com.enthusiasm.telemetry.TracingUtils;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
@@ -42,68 +47,84 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
 
     @Override
     public void accept(ConsumerRecord<String, byte[]> record) { // todo: lock-using semantic lock???, create saga???
+        Span tracing = null;
         try {
-            Headers headers = record.headers();
-
-            SagaHeader sagaHeader = getHeader(headers, "SAGA_HEADER", SagaHeader.class);
-
-            // should we lock instance
-
-            byte[] messageValue = record.value();
-
-            if (sagaHeader.isInitial()) {
-                State instance = DeserializerUtils.deserialize(messageValue, sagaDefinition.stateClass());
-                sagaInstanceRepository.saveInstance(instance, instance.getId());
-                triggerStep(0, instance);
+            TracingSpan tracingInfo = getHeader(record, "TRACING", TracingSpan.class);
+            if (tracingInfo != null) {
+                tracing = TracingUtils.from(tracingInfo, "saga-service", "handle-message");
+                try(Scope ignored = tracing.makeCurrent()) {
+                    doFlow(record);
+                }
                 return;
             }
 
+            doFlow(record);
 
-            State instance = sagaInstanceRepository.getInstance(sagaHeader.instanceId(), sagaDefinition.stateClass());
-
-            int indexStep = getIndexStep(sagaDefinition.sagaSteps(), sagaHeader.stepId());
-
-            if (indexStep == -1) { // todo: magic number
-                throw new RuntimeException("Cannot find step by step id: " + sagaHeader.stepId());
+        } catch (Exception e) {
+            LOGGER.error("Error handle handle message", e);
+        } finally {
+            if (tracing != null) {
+                tracing.end();
             }
+        }
+    }
 
-            SagaStep<State> currentStep = sagaDefinition.sagaSteps().get(indexStep);
-            switch (sagaHeader.flow()) {
-                case NORMAL -> {
-                    // handle reply
-                    Endpoint<?, State, Reply> endpoint = (Endpoint<?, State, Reply>) currentStep.getEndpoint();
-                    BiFunction<State, Reply, Boolean> replyHandler = endpoint.getReplyHandler();
-                    Reply replyValue = DeserializerUtils.deserialize(messageValue, endpoint.getReplyClass());
-                    Boolean status = replyHandler.apply(instance, replyValue); // handle response here
+    private void doFlow(ConsumerRecord<String, byte[]> record) {
+        // should we lock instance
 
-                    if (status) { // send message trigger next step
-                        int indexNextStep = indexStep + 1;
-                        triggerStep(indexNextStep, instance);
-                    } else { // trigger compensation rollback
-                        triggerCompensation(indexStep, instance);
-                    }
-                }
-                case COMPENSATION -> {
+        SagaHeader sagaHeader = getHeader(record, "SAGA_HEADER", SagaHeader.class);
+        byte[] messageValue = record.value();
 
-                    Endpoint<?, State, ?> compensation = currentStep.getCompensation();
-                    if (compensation == null) {
-                        LOGGER.warn("Compensation is empty!");
-                        break;
-                    }
-                    Endpoint<?, State, Reply> compensationEndpoint = (Endpoint<?, State, Reply>) compensation;
-                    BiFunction<State, Reply, Boolean> replyHandler = compensationEndpoint.getReplyHandler();
-                    Reply replyValue = DeserializerUtils.deserialize(messageValue, compensationEndpoint.getReplyClass());
-                    Boolean status = replyHandler.apply(instance, replyValue);
-                    if (!status) {
-                        LOGGER.warn("Fail to handle compensation!");
-                    }
+        if (sagaHeader.isInitial()) { // todo: nullable
+            State instance = DeserializerUtils.deserialize(messageValue, sagaDefinition.stateClass());
+            sagaInstanceRepository.saveInstance(instance, instance.getId());
+            triggerStep(0, instance);
+            return;
+        }
 
-                    // send message trigger next compensation
+
+        State instance = sagaInstanceRepository.getInstance(sagaHeader.instanceId(), sagaDefinition.stateClass());
+
+        int indexStep = getIndexStep(sagaDefinition.sagaSteps(), sagaHeader.stepId());
+
+        if (indexStep == -1) { // todo: magic number
+            throw new RuntimeException("Cannot find step by step id: " + sagaHeader.stepId());
+        }
+
+        SagaStep<State> currentStep = sagaDefinition.sagaSteps().get(indexStep);
+        switch (sagaHeader.flow()) {
+            case NORMAL -> {
+                // handle reply
+                Endpoint<?, State, Reply> endpoint = (Endpoint<?, State, Reply>) currentStep.getEndpoint();
+                BiFunction<State, Reply, Boolean> replyHandler = endpoint.getReplyHandler();
+                Reply replyValue = DeserializerUtils.deserialize(messageValue, endpoint.getReplyClass());
+                Boolean status = replyHandler.apply(instance, replyValue); // handle response here
+
+                if (status) { // send message trigger next step
+                    int indexNextStep = indexStep + 1;
+                    triggerStep(indexNextStep, instance);
+                } else { // trigger compensation rollback
                     triggerCompensation(indexStep, instance);
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error("Error handle handle message", e);
+            case COMPENSATION -> {
+
+                Endpoint<?, State, ?> compensation = currentStep.getCompensation();
+                if (compensation == null) {
+                    LOGGER.warn("Compensation is empty!");
+                    break;
+                }
+                Endpoint<?, State, Reply> compensationEndpoint = (Endpoint<?, State, Reply>) compensation;
+                BiFunction<State, Reply, Boolean> replyHandler = compensationEndpoint.getReplyHandler();
+                Reply replyValue = DeserializerUtils.deserialize(messageValue, compensationEndpoint.getReplyClass());
+                Boolean status = replyHandler.apply(instance, replyValue);
+                if (!status) {
+                    LOGGER.warn("Fail to handle compensation!");
+                }
+
+                // send message trigger next compensation
+                triggerCompensation(indexStep, instance);
+            }
         }
     }
 
@@ -131,6 +152,10 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
     }
 
     private void trigger(SagaStep<State> nextStep, Endpoint<?, State, ?> endpoint, State instance, SagaFlow flow) {
+
+        // add tracing
+        TracingSpan span = TracingUtils.getTracingSpan();
+
         String key = endpoint.getKeyProvider().apply(instance);
         Command command = endpoint.getValueProvider().apply(instance);
         byte[] value = SerializerUtils.serializeToJsonBytes(command);
@@ -147,6 +172,7 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
 
                     SagaHeader sagaHeader = getSagaHeader(nextStep, instance, flow);
                     headers.add(new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(sagaHeader)));
+//                    headers.add(new RecordHeader("TRACING", SerializerUtils.serializeToJsonBytes(span))); // auto-instruction
 
                     return headers;
                 }
@@ -172,14 +198,13 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
         return -1;
     }
 
-    private static <T> T getHeader(Headers headers, String key, Class<T> clazz) {
+    private static <T> T getHeader(ConsumerRecord<String, byte[]> record, String key, Class<T> clazz) { // todo; move to common
+        Headers headers = record.headers();
         Header header = headers.lastHeader(key);
-        byte[] valueHeader = header.value();
-        if (valueHeader == null || valueHeader.length == 0) {
-            throw new RuntimeException("Not found step header");
+        if (header == null) {
+            return null; // todo: null or exception
         }
+        byte[] valueHeader = header.value();
         return DeserializerUtils.deserialize(valueHeader, clazz);
     }
-
-
 }
