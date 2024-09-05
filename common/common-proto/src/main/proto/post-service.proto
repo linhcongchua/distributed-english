@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+package com.enthusiasm.proto;
+
+message PostDetailRequest {
+  string post_id = 1;
+}
+
+message UserInfo {
+  string user_id = 1;
+  string user_name = 2;
+  string email = 3;
+}
+
+message Comment {
+  string comment_id = 2;
+  string comment_detail = 3;
+}
+
+message PostComment {
+  string user_id = 1;
+  Comment comment = 2;
+  repeated Comment sub_comments = 3;
+}
+
+message PostDetailResponse {
+  string post_id = 1;
+  string title = 2;
+  string detail = 3;
+  UserInfo user_info = 4;
+  repeated PostComment post_comments = 5;
+}
+
+service PostService {
+  rpc getPostDetail(PostDetailRequest) returns (PostDetailResponse);
+}

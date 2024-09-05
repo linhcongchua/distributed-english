@@ -153,9 +153,6 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
 
     private void trigger(SagaStep<State> nextStep, Endpoint<?, State, ?> endpoint, State instance, SagaFlow flow) {
 
-        // add tracing
-        TracingSpan span = TracingUtils.getTracingSpan();
-
         String key = endpoint.getKeyProvider().apply(instance);
         Command command = endpoint.getValueProvider().apply(instance);
         byte[] value = SerializerUtils.serializeToJsonBytes(command);
@@ -172,7 +169,6 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
 
                     SagaHeader sagaHeader = getSagaHeader(nextStep, instance, flow);
                     headers.add(new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(sagaHeader)));
-//                    headers.add(new RecordHeader("TRACING", SerializerUtils.serializeToJsonBytes(span))); // auto-instruction
 
                     return headers;
                 }

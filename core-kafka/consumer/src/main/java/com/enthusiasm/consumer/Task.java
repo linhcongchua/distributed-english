@@ -28,7 +28,7 @@ public class Task implements Runnable {
 
     @Override
     public void run() {
-        synchronized (lockKey) {
+        synchronized (lockKey) { // todo: using lock class to using virtual thread.  // rollback using platform thread??? for hibernate???
             if (state == State.STOPPED) {
                 return;
             }

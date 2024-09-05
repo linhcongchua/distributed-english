@@ -14,7 +14,6 @@ public class PostCreatePendingEvent implements ExportedEvent<String, JsonNode>, 
     private final UUID userId;
     private final String replyTopic;
     private final String sagaHeader;
-
     private final String spanTracing;
 
     public PostCreatePendingEvent(UUID userId, String replyTopic, String sagaHeader, String spanTracing) {

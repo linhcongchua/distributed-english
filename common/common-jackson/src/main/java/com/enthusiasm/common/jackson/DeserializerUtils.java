@@ -21,4 +21,12 @@ public class DeserializerUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static  <T> T deserialize(String json, Class<T> clazz) {
+        try {
+            return MAPPER.readValue(json, clazz);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

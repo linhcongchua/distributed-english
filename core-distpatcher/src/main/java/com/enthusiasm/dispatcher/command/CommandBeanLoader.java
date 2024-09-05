@@ -2,6 +2,9 @@ package com.enthusiasm.dispatcher.command;
 
 import com.enthusiasm.consumer.ConsumerProperties;
 import com.enthusiasm.consumer.MessageSubscription;
+import com.enthusiasm.dispatcher.DispatcherBeanLoader;
+import com.enthusiasm.dispatcher.HandlerDescription;
+import com.enthusiasm.dispatcher.ListenerContainer;
 import com.enthusiasm.producer.MessageProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +22,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-// todo add shutdown graceful
-public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextAware, InitializingBean, SmartInitializingSingleton {
+public class CommandBeanLoader extends DispatcherBeanLoader implements BeanPostProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandBeanLoader.class);
-    private final CommandListenerContainer listenerContainer;
 
-    private final ConsumerProperties consumerProperties;
+    private final MessageProducer messageProducer;
 
     public CommandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService, MessageProducer messageProducer) {
-        this.consumerProperties = consumerProperties;
-        listenerContainer = new CommandListenerContainer(executorService, messageProducer);
+        super(consumerProperties, executorService);
+        this.messageProducer = messageProducer;
+    }
+
+    @Override
+    protected ListenerContainer initializeListenerContainer(ConsumerProperties consumerProperties, ExecutorService executorService) {
+        return new CommandListenerContainer(executorService, messageProducer, consumerProperties);
     }
 
     @Override
@@ -42,17 +48,20 @@ public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextA
         Class<?> aClass = bean.getClass();
         CommandDispatcher commandDispatcher = aClass.getAnnotation(CommandDispatcher.class);
         if (commandDispatcher != null) {
-            Map<Method, CommandHandler> methodCommandHandlerMap = MethodIntrospector.selectMethods(aClass, (MethodIntrospector.MetadataLookup<CommandHandler>) method -> method.getAnnotation(CommandHandler.class));
+            Map<Method, CommandHandler> methodCommandHandlerMap = MethodIntrospector.selectMethods(
+                    aClass,
+                    (MethodIntrospector.MetadataLookup<CommandHandler>) method -> method.getAnnotation(CommandHandler.class)
+            );
 
             var handlerDescription = createHandlerDescription(commandDispatcher, methodCommandHandlerMap);
-            registerCommandHandler(handlerDescription, bean);
+            registerHandler(handlerDescription, bean);
         }
 
         return bean;
     }
 
-    private CommandHandlerDescription createHandlerDescription(CommandDispatcher commandDispatcher, Map<Method, CommandHandler> methodCommandHandlerMap) {
-        var handlerDescription = new CommandHandlerDescription();
+    private HandlerDescription createHandlerDescription(CommandDispatcher commandDispatcher, Map<Method, CommandHandler> methodCommandHandlerMap) {
+        var handlerDescription = new HandlerDescription();
         handlerDescription.setTopic(commandDispatcher.service() + '-' + commandDispatcher.topic()); // todo: fix
         handlerDescription.setGroup(commandDispatcher.service()); // todo: check logic
         handlerDescription.setThreadPerPartition(commandDispatcher.isThreadPerPartition()); // todo: should using properties config consumer
@@ -67,31 +76,5 @@ public class CommandBeanLoader implements BeanPostProcessor, ApplicationContextA
 
         handlerDescription.setMethodHandler(commandTypeMethod);
         return handlerDescription;
-    }
-
-    private synchronized void registerCommandHandler(CommandHandlerDescription handlerDescription, Object bean) {
-        listenerContainer.registerListenerContainer(handlerDescription, bean, consumerProperties);
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        LOGGER.info("[Here u are] <<<<<<<<<< setApplicationContext");
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        LOGGER.info("[Here u are] <<<<<<<<<< afterPropertiesSet");
-    }
-
-    @Override
-    public void afterSingletonsInstantiated() {
-        // todo: start consumer
-        LOGGER.info("[Here u are] <<<<<<<<<< afterSingletonsInstantiated");
-        Set<MessageSubscription> subscriptions = listenerContainer.start();
-
-        //
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            subscriptions.forEach(MessageSubscription::unsubscribe);
-        }));
     }
 }
