@@ -2,7 +2,6 @@ package com.enthusiasm.dispatcher.event;
 
 import com.enthusiasm.dispatcher.DispatcherMessageHandler;
 import com.enthusiasm.dispatcher.HandlerDescription;
-import com.enthusiasm.dispatcher.command.CommandBody;
 import com.enthusiasm.dispatcher.command.Constants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
@@ -25,10 +24,15 @@ public class EventMessageHandler extends DispatcherMessageHandler {
 
     @Override
     protected byte[] getValueFromRecord(ConsumerRecord<String, byte[]> record, Parameter parameter) {
-        CommandBody commandBody = parameter.getAnnotation(CommandBody.class);
-        if (commandBody != null) {
+        EventBody eventBody = parameter.getAnnotation(EventBody.class);
+        if (eventBody != null) {
             return record.value();
         }
         throw new RuntimeException("Cannot detect the parameter value!");
+    }
+
+    @Override
+    protected void handleError(Exception e) {
+        LOGGER.error("Error when handle message", e);
     }
 }

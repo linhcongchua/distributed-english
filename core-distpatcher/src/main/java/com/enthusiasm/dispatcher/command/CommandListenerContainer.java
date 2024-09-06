@@ -13,10 +13,14 @@ import java.util.concurrent.ExecutorService;
 public class CommandListenerContainer extends ListenerContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandListenerContainer.class);
 
-    private final MessageProducer messageProducer;
+    private MessageProducer messageProducer;
 
     public CommandListenerContainer(ExecutorService executorService, MessageProducer messageProducer, ConsumerProperties consumerProperties) {
         super(executorService, consumerProperties);
+        this.messageProducer = messageProducer;
+    }
+
+    public void setMessageProducer(MessageProducer messageProducer) {
         this.messageProducer = messageProducer;
     }
 

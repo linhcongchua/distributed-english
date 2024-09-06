@@ -6,7 +6,6 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Inherited
 public @interface EventDispatcher {
-    String service();
     String topic();
     String group();
 

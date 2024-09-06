@@ -3,9 +3,12 @@ package com.enthusiasm.dispatcher;
 import com.enthusiasm.common.jackson.DeserializerUtils;
 import com.enthusiasm.consumer.MessageHandler;
 import com.enthusiasm.dispatcher.command.NotFoundCommandTypeHandler;
+import com.enthusiasm.dispatcher.utils.RecordHeaderUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -13,6 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public abstract class DispatcherMessageHandler implements MessageHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DispatcherMessageHandler.class);
+
     private final HandlerDescription handlerDescription;
     private final Object instance;
 
@@ -44,14 +50,12 @@ public abstract class DispatcherMessageHandler implements MessageHandler {
     }
 
     private Method getMethod(ConsumerRecord<String, byte[]> record) {
-        Headers headers = record.headers();
-        Header commandTypeHeader = headers.lastHeader(getTypeHeader());
-        String commandType = new String(commandTypeHeader.value(), StandardCharsets.UTF_8);
+        String type = RecordHeaderUtils.getHeader(record, "EXTRA_HEADER", getTypeHeader(), String.class);
 
         Map<String, Method> methodHandler = handlerDescription.getMethodHandler();
-        Method method = methodHandler.get(commandType);
+        Method method = methodHandler.get(type);
         if (method == null) {
-            throw new NotFoundCommandTypeHandler(commandType);
+            throw new NotFoundCommandTypeHandler(type);
         }
         return method;
     }

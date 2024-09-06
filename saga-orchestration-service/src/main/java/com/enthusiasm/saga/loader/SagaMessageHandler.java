@@ -12,8 +12,10 @@ import com.enthusiasm.saga.core.Endpoint;
 import com.enthusiasm.saga.core.SagaDefinition;
 import com.enthusiasm.saga.core.SagaState;
 import com.enthusiasm.saga.core.SagaStep;
+import com.enthusiasm.saga.utils.RecordHeaderUtils;
 import com.enthusiasm.telemetry.TracingSpan;
 import com.enthusiasm.telemetry.TracingUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
@@ -25,9 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class SagaMessageHandler<State extends SagaState, Reply extends SagaResponse> implements MessageHandler {
@@ -49,7 +49,7 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
     public void accept(ConsumerRecord<String, byte[]> record) { // todo: lock-using semantic lock???, create saga???
         Span tracing = null;
         try {
-            TracingSpan tracingInfo = getHeader(record, "TRACING", TracingSpan.class);
+            TracingSpan tracingInfo = RecordHeaderUtils.getHeader(record, "TRACING", TracingSpan.class);
             if (tracingInfo != null) {
                 tracing = TracingUtils.from(tracingInfo, "saga-service", "handle-message");
                 try(Scope ignored = tracing.makeCurrent()) {
@@ -71,10 +71,12 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
 
     private void doFlow(ConsumerRecord<String, byte[]> record) {
         // should we lock instance
-
-        SagaHeader sagaHeader = getHeader(record, "SAGA_HEADER", SagaHeader.class);
         byte[] messageValue = record.value();
 
+        SagaHeader sagaHeader = RecordHeaderUtils.getHeader(record, "EXTRA_HEADER", "SAGA_HEADER", SagaHeader.class);
+        if (sagaHeader == null) {
+            throw new RuntimeException("Cannot found saga header!");
+        }
         if (sagaHeader.isInitial()) { // todo: nullable
             State instance = DeserializerUtils.deserialize(messageValue, sagaDefinition.stateClass());
             sagaInstanceRepository.saveInstance(instance, instance.getId());
@@ -162,15 +164,11 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
                 key,
                 value,
                 () -> {
-                    List<Header> headers = new ArrayList<>();
-                    for (var header : endpoint.getHeaders().entrySet()) {
-                        headers.add(new RecordHeader(header.getKey(), header.getValue().getBytes(StandardCharsets.UTF_8)));
-                    }
-
+                    Map<String, Object> extraHeader = new HashMap<>(endpoint.getHeaders());
                     SagaHeader sagaHeader = getSagaHeader(nextStep, instance, flow);
-                    headers.add(new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(sagaHeader)));
-
-                    return headers;
+                    extraHeader.put("SAGA_HEADER", sagaHeader);
+                    RecordHeader header = new RecordHeader("EXTRA_HEADER", SerializerUtils.serializeToJsonBytes(extraHeader));
+                    return List.of(header);
                 }
         );
     }
@@ -192,15 +190,5 @@ public class SagaMessageHandler<State extends SagaState, Reply extends SagaRespo
             }
         }
         return -1;
-    }
-
-    private static <T> T getHeader(ConsumerRecord<String, byte[]> record, String key, Class<T> clazz) { // todo; move to common
-        Headers headers = record.headers();
-        Header header = headers.lastHeader(key);
-        if (header == null) {
-            return null; // todo: null or exception
-        }
-        byte[] valueHeader = header.value();
-        return DeserializerUtils.deserialize(valueHeader, clazz);
     }
 }

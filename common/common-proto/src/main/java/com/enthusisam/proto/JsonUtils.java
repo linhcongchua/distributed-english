@@ -6,6 +6,8 @@ import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
 
+import java.lang.reflect.Constructor;
+
 public class JsonUtils {
 
     private JsonUtils() {
@@ -32,7 +34,9 @@ public class JsonUtils {
     @SuppressWarnings("unchecked")
     public static <T extends Message> T fromJson(String json, Class<T> clazz) {
         try {
-            T t = clazz.getDeclaredConstructor().newInstance();
+            Constructor<T> declaredConstructor = clazz.getDeclaredConstructor();
+            declaredConstructor.setAccessible(true);
+            T t = declaredConstructor.newInstance();
             Message.Builder builder = t.toBuilder();
             JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
             return (T) builder.build();

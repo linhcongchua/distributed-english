@@ -2,6 +2,7 @@ package com.enthusiasm.dispatcher.command;
 
 import com.enthusiasm.dispatcher.DispatcherMessageHandler;
 import com.enthusiasm.dispatcher.HandlerDescription;
+import com.enthusiasm.dispatcher.utils.RecordHeaderUtils;
 import com.enthusiasm.producer.MessageProducer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
@@ -36,9 +37,7 @@ public class CommandMessageHandler extends DispatcherMessageHandler {
 
         CommandHeader commandHeader = parameter.getAnnotation(CommandHeader.class);
         if (commandHeader != null) {
-            Headers headers = record.headers();
-            Header header = headers.lastHeader(commandHeader.value());
-            return header.value();
+            return RecordHeaderUtils.getHeaderBytes(record, "EXTRA_HEADER", commandHeader.value());
         }
 
         throw new RuntimeException("Cannot detect the parameter value!");

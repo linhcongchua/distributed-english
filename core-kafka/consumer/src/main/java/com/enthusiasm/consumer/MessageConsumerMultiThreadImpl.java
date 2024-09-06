@@ -114,6 +114,7 @@ public class MessageConsumerMultiThreadImpl implements MessageConsumer, Runnable
     public void unsubscribe() {
         stopped = true;
         delegateConsumer.wakeup();
+        LOGGER.info("Stop listen to {}", topic);
     }
 
 

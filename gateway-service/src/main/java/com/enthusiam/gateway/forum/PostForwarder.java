@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -40,7 +42,9 @@ public class PostForwarder {
                 postId, request.postTitle(), request.postDetail(), request.userId(), request.reward());
         messageProducer.send("orchestration-create-post", request.userId().toString(), SerializerUtils.serializeToJsonBytes(command),
                 () -> {
-                    RecordHeader recordHeader = new RecordHeader("SAGA_HEADER", SerializerUtils.serializeToJsonBytes(SagaHeader.getInitial()));
+                    Map<String, Object> extraHeader = new HashMap<>();
+                    extraHeader.put("SAGA_HEADER", SagaHeader.getInitial());
+                    RecordHeader recordHeader = new RecordHeader("EXTRA_HEADER", SerializerUtils.serializeToJsonBytes(extraHeader));
                     return List.of(recordHeader);
                 });
         return new CreatePostResponse(postId);

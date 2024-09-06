@@ -1,6 +1,7 @@
 package com.enthusiasm.forum.projections;
 
-import com.enthusiasm.common.forum.command.PostCreatePendingEvent;
+import com.enthusiam.common.event.Constants;
+import com.enthusiam.common.event.forum.PostCreatePendingEvent;
 import com.enthusiasm.dispatcher.event.EventBody;
 import com.enthusiasm.dispatcher.event.EventDispatcher;
 import com.enthusiasm.dispatcher.event.EventHandler;
@@ -11,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-@EventDispatcher(service = "forum-service", topic = "", group = "post-mongo-project")
+@EventDispatcher(topic = Constants.POST_TOPIC_EVENT, group = "post-mongo-project")
 public class PostMongoProjection {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(PostMongoProjection.class);
@@ -25,12 +26,12 @@ public class PostMongoProjection {
     @EventHandler(eventType = "POST_CREATING_EVENT")
     public void handlePostCreated(@EventBody PostCreatePendingEvent event) {
         final var document = PostDocument.builder()
-                .id("")
+                .id(event.getPostId().toString())
+                .title(event.getPostTitle())
+                .detail(event.getPostDetail())
                 .build();
 
         final var inserted = postMongoRepository.insert(document);
-        LOGGER.info("Synchronized post to read database");
+        LOGGER.info("Synchronized post to read database: {}", inserted);
     }
-
-
 }

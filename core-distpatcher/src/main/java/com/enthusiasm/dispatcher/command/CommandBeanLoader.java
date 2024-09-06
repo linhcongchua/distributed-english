@@ -2,18 +2,14 @@ package com.enthusiasm.dispatcher.command;
 
 import com.enthusiasm.consumer.ConsumerProperties;
 import com.enthusiasm.consumer.MessageSubscription;
-import com.enthusiasm.dispatcher.DispatcherBeanLoader;
 import com.enthusiasm.dispatcher.HandlerDescription;
 import com.enthusiasm.dispatcher.ListenerContainer;
 import com.enthusiasm.producer.MessageProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodIntrospector;
 
 import java.lang.reflect.Method;
@@ -22,19 +18,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-public class CommandBeanLoader extends DispatcherBeanLoader implements BeanPostProcessor {
+public class CommandBeanLoader implements SmartInitializingSingleton, BeanPostProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandBeanLoader.class);
 
-    private final MessageProducer messageProducer;
+    protected final ListenerContainer listenerContainer;
 
     public CommandBeanLoader(ConsumerProperties consumerProperties, ExecutorService executorService, MessageProducer messageProducer) {
-        super(consumerProperties, executorService);
-        this.messageProducer = messageProducer;
-    }
-
-    @Override
-    protected ListenerContainer initializeListenerContainer(ConsumerProperties consumerProperties, ExecutorService executorService) {
-        return new CommandListenerContainer(executorService, messageProducer, consumerProperties);
+        this.listenerContainer = new CommandListenerContainer(executorService, messageProducer, consumerProperties);
     }
 
     @Override
@@ -76,5 +66,20 @@ public class CommandBeanLoader extends DispatcherBeanLoader implements BeanPostP
 
         handlerDescription.setMethodHandler(commandTypeMethod);
         return handlerDescription;
+    }
+
+    protected void registerHandler(HandlerDescription handlerDescription, Object bean) {
+        listenerContainer.registerListenerContainer(handlerDescription, bean);
+    }
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        LOGGER.info("Starting command listener");
+        Set<MessageSubscription> subscriptions = listenerContainer.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Stopping command listenr");
+            subscriptions.forEach(MessageSubscription::unsubscribe);
+        }));
     }
 }

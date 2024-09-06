@@ -27,6 +27,7 @@ dependencies {
     implementation project(":common:common-simple-web")
     implementation project(":common:common-open-telemetry")
     implementation project(":common:common-proto")
+    implementation project(":common:common-event")
 
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
@@ -36,6 +37,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'com.google.protobuf:protobuf-java-util:3.25.4'// todo: move to util???
 
+    implementation 'org.mapstruct:mapstruct:1.6.0'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0'
 
     implementation 'io.opentelemetry:opentelemetry-api:1.37.0' // fix
 
