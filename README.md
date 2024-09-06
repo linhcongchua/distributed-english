@@ -1,39 +1,46 @@
-| Service                    | Health-check url             |
-|----------------------------|------------------------------|
-| forum-service              | http://localhost:8085/health |
-| notification-service       | http://localhost:8086/health |
-| payment-service            | http://localhost:8087/health |
-| saga-orchestration-service | http://localhost:8088/health |
+| Service                    | Health-check url             | grpc-endpoint         |
+|----------------------------|------------------------------|-----------------------|
+| forum-service              | http://localhost:8085/health | http://localhost:9090 |
+| notification-service       | http://localhost:8086/health |                       |
+| payment-service            | http://localhost:8087/health |                       |
+| saga-orchestration-service | http://localhost:8088/health |                       |
+| gateway-service            | http://localhost:8080/health |                       |
+
+- Mongo-express: http://localhost:8091/
+- Jaeger: http://localhost:16686/search
 
 
-## Architecture
+## I. Architecture
 
-> This project is demo project for what I have learned through those time as a copy/paster
+> This project is demo project for what I have learned through my experience as a developer.
 
- With an idea `making a forum for English learner or any languages`, that forum can help learner post a question in the internet with a small `reward`, and take advantage of million learner out there. Hope it can make a journey to English or any other languages much easier.
+With the idea of creating `a forum for English` learners (or learners of any language), we aim to assist users in posting questions online and `earning small rewards`. By leveraging the vast community of learners, we hope to make the journey of learning English or another language significantly easier.
 
  
 #### 1. Overview structure
 
-![overview-project-structure](./z-docs/microservice_in_actions-[distributed-english]overview-project-structure.drawio.png)
+![overview-project-structure](./z-docs/overview-project-structure.png)
 
-There are many service that single single service have their own database. Services communicate through `Kafka` to produce command or event. With query request, it is suitable for using `http` request directly to service
+In our distributed
 
-- Gateway-sevice: 
-- Saga-orchestration-service:
-- Notification-service
-- Payment-service:
-- Forum-service:
-- Media-service
-- Fraud-detection-service:
-- Account-service:
+There are many service that single single service have their own database. Services communicate through `Kafka` to produce command or event. With query request, it is suitable for using `grpc` request directly to service
+
+- **Gateway-sevice**: Receive HTTP request (query/command) forward command to purposed service or combine resource to reponse to client
+- **Saga-orchestration-service**: Implement saga-pattern
+- **Notification-service**: Implement logic follow and notification
+- **Payment-service**: Handle feature reward transaction.
+- **Forum-service**: Handle posting and searching post.
+- **Media-service**: Upload image to bucket
+- **Account-service**: Implement authen/author
 
 #### 2. Pattern
 
 ##### A. CQRS
 
-> As our `forum-service` will have more read request than a write. So it can using CQRS for reduce the latency in read request.
-> And more the query side can also listen to other event that related to this domain in other service and combine as a flat data. 
+> As our application is a forum so that we'll facing a significantly higher volume of read requests compared to write requests. To address this problem, we 've implemented the CQRS. (See `forum-service` as the implemented one)
+
+- `Command Side`: Handles writes operation (e.g. creatng, updating, deleting)
+- `Query Side`: Handles read operations. Queries  are designed to be fast and efficent by flatting the data to embedded document
 
 ![sqrs-forum](./z-docs/microservice_in_actions-[distributed-english]forum-cqrs.drawio.png)
 
@@ -48,8 +55,9 @@ There are many service that single single service have their own database. Servi
 
 ##### C. Event Sourcing
 
-> Event Sourcing is good choice for observing the change through timeline of a domain. And with this `distributed-english`, its purpose is take advantage of million languages learner out there. And reward take place as a interested feature that be consider as another way to make money for those one who have answer the question.
-> It is about `Money` - `Payment-service`.
+> Event Sourcing is a great way to track changes in a domain over time. In distributed-english, it can be used to implement rewards.
+
+*It is about `Money` - `Payment-service`.*
 
 | aggregate_type | event_type           | data    | metadata | version | timestamp               |
 |----------------|----------------------|---------|----------|---------|-------------------------|
@@ -62,12 +70,78 @@ There are many service that single single service have their own database. Servi
 => `current_emoney = 0.0 + 25000.0 - 10000.0 + 80000.0 - 35000.0 = 60000.0`
 
 
-## Opentelemetry
+## II. Opentelemetry
 
 - We are using Java agent to reduce config work. Reference: [opentelemetry-javaagent](https://github.com/open-telemetry/opentelemetry-java-instrumentation)
 - And Jaeger as center observation.
 
-## TODO
-- [ ] Move run -> docker & k8s
-- [ ] Config ELK
-- [ ] CQRS query handler code base.
+## III. TODO
+
+ > Check in [project-issue](https://github.com/linhcongchua/distributed-english/issues)
+
+## IV. How to run
+
+#### Configuration
+
+1. Config `opentelemetry-javaagent.jar` java argument for tracing
+
+```
+-javaagent:/path/to/opentelemetry-javaagent.jar
+-Dotel.service.name=forum-service
+-Dotel.traces.exporter=otlp
+-Dotel.exporter.otlp.traces.endpoint=http://localhost:4317
+-Dotel.metrics.exporter=none
+-Dotel.logs.exporter=none
+```
+
+2. Config debezium connector
+
++ get ip: `ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+
+_replace hostname by ip above_
+```shell
+curl --location 'http://localhost:8083/connectors' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/json' \
+--data '{
+   "name": "forum-post-connector",
+   "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "00.00.00.00",
+        "database.port": "5445",
+        "database.user": "postgres",
+        "database.password": "admin",
+        "database.dbname": "forum-service",
+        "table.include.list": "public.event_publish",
+        "topic.prefix": "holy",
+        "transforms" : "outbox",
+        "value.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "transforms.outbox.table.expand.json.payload": "true",
+        "transforms.outbox.type" : "io.debezium.transforms.outbox.EventRouter",
+        "transforms.outbox.table.field.event.key": "aggregate_id",
+        "transforms.outbox.route.by.field": "aggregate_type",
+        "transforms.outbox.route.topic.replacement": "${routedByValue}",
+        "transforms.outbox.table.fields.additional.placement": "type:header:EXTRA_HEADER,tracing:header:TRACING"
+    }
+}'
+```
+#### API testing
+
+1. creating post
+
+```
+curl --location 'http://localhost:8080/api/v1/post' \
+--header 'Content-Type: application/json' \
+--data '{
+    "postTitle": "test-title",
+    "postDetail": "test-detail",
+    "userId": "a7fef025-0d36-4f3e-9a30-4748a52079e7",
+    "reward": 1
+}'
+```
+
+2. getting post
+```
+curl --location 'http://localhost:8080/api/v1/post/6773f9a8-3a60-4e53-8344-f29d106b279f'
+```
