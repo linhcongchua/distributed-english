@@ -21,4 +21,8 @@ include 'common:common-simple-web'
 findProject(':common:common-simple-web')?.name = 'common-simple-web'
 include 'common:common-open-telemetry'
 findProject(':common:common-open-telemetry')?.name = 'common-open-telemetry'
+include 'common:common-proto'
+findProject(':common:common-proto')?.name = 'common-proto'
+include 'common:common-event'
+findProject(':common:common-event')?.name = 'common-event'
 

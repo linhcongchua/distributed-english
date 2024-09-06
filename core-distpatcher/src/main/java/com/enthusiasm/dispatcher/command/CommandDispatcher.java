@@ -11,6 +11,4 @@ public @interface CommandDispatcher {
     String topic();
 
     boolean isThreadPerPartition() default true;
-
-
 }

@@ -26,7 +26,7 @@ public class CommandDispatcherConfiguration {
 
     @Bean
     public ExecutorService executorService() {
-        return Executors.newFixedThreadPool(12);
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Bean

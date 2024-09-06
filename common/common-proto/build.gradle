@@ -1,0 +1,43 @@
+plugins {
+    id("java")
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = "com.enthusiasm"
+version = "0.0.1-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.grpc:grpc-protobuf:1.66.0'
+    implementation 'io.grpc:grpc-stub:1.66.0'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+    implementation 'com.google.protobuf:protobuf-java-util:3.25.4'
+
+    implementation 'org.slf4j:slf4j-api:2.0.13'
+
+    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.66.0'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
