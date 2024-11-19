@@ -54,7 +54,7 @@ public record SagaDefinition<State extends SagaState>(
 
         public StepBuilder(SagaDefinitionBuilder<State> holder) {
             this.holder = holder;
-            this.currentStep = new SagaStep<>(UUID.randomUUID());
+            this.currentStep = new SagaStep<>(UUID.randomUUID()); // todo: stepId for multiple instance
         }
 
         public <C extends Command, Reply extends SagaResponse> StepBuilder<State> invoke(Endpoint<C, State, Reply> endpoint) {
