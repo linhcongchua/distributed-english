@@ -14,9 +14,9 @@ dependencies {
     implementation project(":common:common-jackson")
     implementation project(":common:common-open-telemetry")
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.17.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.18.2'
 
     implementation 'io.opentelemetry:opentelemetry-api:1.37.0'
 

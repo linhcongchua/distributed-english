@@ -130,6 +130,16 @@ services:
       - mongodb
     networks:
       - cdc-using-debezium-network
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - 4566:4566
+    environment:
+      - SERVICES=s3
+      - GATEWAY_LISTEN=0.0.0.0:4566
+    volumes:
+      - ./localstack:/docker-entrypoint-initaws.d"
 
 volumes:
   db:

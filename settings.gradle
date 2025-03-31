@@ -25,4 +25,5 @@ include 'common:common-proto'
 findProject(':common:common-proto')?.name = 'common-proto'
 include 'common:common-event'
 findProject(':common:common-event')?.name = 'common-event'
+include 'exchange-common'
 
